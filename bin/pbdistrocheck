@@ -1,0 +1,31 @@
+#!/usr/bin/perl -w
+#
+# Project Builder Distribution Checker
+#
+# $Id$
+#
+# Copyright B. Cornec 2007
+# Provided under the GPL v2
+
+use strict 'vars';
+use Getopt::Long qw(:config auto_abbrev no_ignore_case);
+use Data::Dumper;
+use lib qw (lib);
+use ProjectBuilder::Distribution;
+use ProjectBuilder::Base;
+
+my %opts;					# CLI Options
+
+GetOptions("verbose|v+" => \$opts{'v'});
+if (defined $opts{'v'}) {
+	$pbdebug = $opts{'v'};
+}
+if (defined $opts{'l'}) {
+	open(pbLOG,"> $opts{'l'}") || die "Unable to log to $opts{'l'}: $!";
+	$pbLOG = \*pbLOG;
+	$pbdebug = 0  if ($pbdebug == -1);
+	}
+pb_log_init($pbdebug, $pbLOG);
+
+my ($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd) = pb_distro_init();
+print "distro tuple: ".join(',',($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd))."\n";
