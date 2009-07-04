@@ -27,5 +27,5 @@ if (defined $opts{'l'}) {
 	}
 pb_log_init($pbdebug, $pbLOG);
 
-my ($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd) = pb_distro_init();
-print "distro tuple: ".join(',',($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd))."\n";
+my ($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd, $arch) = pb_distro_init();
+print "distro tuple: ".join(',',($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd, $arch))."\n";

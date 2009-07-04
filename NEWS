@@ -2,6 +2,12 @@
 
 PERL-PROJECTBUILDER CHANGES
 
+0.9.7 (2009-07-04)
+- pb_distro_init now returns a 7th paramater which is the arch, useful for pbdistrocheck (Bruno Cornec)
+- pb_distro_init accepts now a third parameter (arch) in order to force the setup of the update command for VEs (Bruno Cornec)
+- pb_get_arch placed lower in the modules tree and used everywhere uname was used (Bruno Cornec)
+- Adds Asianux support to pb for MondoRescue official packages support (Bruno Cornec)
+
 0.9.6 (2009-02-19)
 - Add support for addition of repository on the fly at build time with addrepo (Bruno Cornec)
 - Fix debian build deps computation and installation (Bruno Cornec)

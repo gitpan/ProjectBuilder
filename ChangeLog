@@ -1,8 +1,72 @@
+2009-07-05  Bruno Cornec <bruno@project-builder.org>
+
+	* [r801] Creation of
+	  svn+ssh://svn.project-builder.org/mondo/svn/pb///0.9.7 from
+	  svn+ssh://svn.project-builder.org/mondo/svn/pb//devel
+
+2009-05-03  Bruno Cornec <bruno@project-builder.org>
+
+	* [r768] - No snapshot needed if creating the VM
+	  - Remove the VE befor recreating it if snapshot
+	  - Force yum update
+
+2009-04-04  Bruno Cornec <bruno@project-builder.org>
+
+	* [r757] Should initialize arch systematically
+	* [r756] pb_distro_init now returns a 7th paramater which is the
+	  arch, useful for pbdistrocheck
+
+2009-03-30  Bruno Cornec <bruno@project-builder.org>
+
+	* [r751] - Adds snapshot support for VEs
+	  - Force usage of correct arch in pb_distro_init to avoid issues
+	  when cross building
+	* [r750] - pb_distro_init accepts now a third parameter (arch) in
+	  order to force the setup of the update command for VEs
+	* [r749] - pb_get_arch placed lower in the modules tree and used
+	  everywhere uname was used
+	  - Adds the possibility to replace the post-install script for
+	  rinse to allow for a perl script replacement which is common
+	  between distributions
+
+2009-03-12  Bruno Cornec <bruno@project-builder.org>
+
+	* [r735] - pb now differentiates suse (aka SuSE Professional) and
+	  opensuse. Fix original #40
+
+2009-03-06  Bruno Cornec <bruno@project-builder.org>
+
+	* [r721] - Adds support for pre and post scripts for VM/VE launched
+	  before and after the build to allow for local setup.
+	  - Adds additional repo support for debian type as well.
+	  - Fix a bug around architecture compatibility check.
+	  - Transmit verbosity level
+	  - Adds support for proxy environment variables at setup and build
+	  time
+	  - Do not reinstall a repo which was already there (except for
+	  urpmi)
+
+2009-03-05  Bruno Cornec <bruno@project-builder.org>
+
+	* [r717] Take only the major number of the version for asianux
+	* [r716] Fix for Asianux 2.0 support
+
+2009-03-04  Bruno Cornec <bruno@project-builder.org>
+
+	* [r715] Fix Asianux 3 support - still have to see for 2.2
+
+2009-03-02  Bruno Cornec <bruno@project-builder.org>
+
+	* [r714] Adds Asianux support to pb for MondoRescue official
+	  packages support
+
+2009-02-20  Bruno Cornec <bruno@project-builder.org>
+
+	* [r711] Use the directory /etc/pat/sources.list.d to put the new
+	  apt repo at build time. Much cleaner
+
 2009-02-19  Bruno Cornec <bruno@project-builder.org>
 
-	* [r706] Creation of
-	  svn+ssh://svn.project-builder.org/mondo/svn/pb///0.9.6 from
-	  svn+ssh://svn.project-builder.org/mondo/svn/pb//devel
 	* [r702] - new function pb_distro_setuprepo (addition of repository
 	  on the fly at build time)
 	  - pb_get_dist_param => pb_distro_get_param and placed in

@@ -41,32 +41,39 @@ This modules provides functions to allow detection of Linux distributions, and g
   # 
   # Return information on the running distro
   #
-  my ($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd) = pb_distro_init();
-  print "distro tuple: ".Dumper($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd)."\n";
+  my ($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd, $arch) = pb_distro_init();
+  print "distro tuple: ".Dumper($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd, $arch)."\n";
   # 
   # Return information on the requested distro
   #
-  my ($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd) = pb_distro_init("ubuntu","7.10");
-  print "distro tuple: ".Dumper($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd)."\n";
+  my ($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd, $arch) = pb_distro_init("ubuntu","7.10","x86_64");
+  print "distro tuple: ".Dumper($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd, $arch)."\n";
   # 
   # Return information on the running distro
   #
   my ($ddir,$dver) = pb_distro_get();
-  my ($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd) = pb_distro_init($ddir,$dver);
-  print "distro tuple: ".Dumper($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd)."\n";
+  my ($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd, $arch) = pb_distro_init($ddir,$dver);
+  print "distro tuple: ".Dumper($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd, $arch)."\n";
 
 =head1 USAGE
 
 =over 4
 
+=item B<pb_distro_init>
 
-=item B<pb_distro_get>
+This function returns a list of 7 parameters indicating the distribution name, version, family, type of build system, suffix of packages, update command line and architecture of the underlying Linux distribution. The value of the 7 fields may be "unknown" in case the function was unable to recognize on which distribution it is running.
 
-This function returns a list of 2 parameters indicating the distribution name and version of the underlying Linux distribution. The value of those 2 fields may be "unknown" in case the function was unable to recognize on which distribution it is running.
+As an example, Ubuntu and Debian are in the same "du" family. As well as RedHat, RHEL, CentOS, fedora are on the same "rh" family.
+Mandriva, Open SuSE and Fedora have all the same "rpm" type of build system. Ubuntu ad Debian have the same "deb" type of build system. 
+And "fc" is the extension generated for all Fedora packages (Version will be added by pb).
 
-On my home machine it would currently report ("mandriva","2008.0").
+When passing the distribution name and version as parameters, the B<pb_distro_init> function returns the parameter of that distribution instead of the underlying one.
+
+Cf: http://linuxmafia.com/faq/Admin/release-files.html
+Ideas taken from http://search.cpan.org/~kerberus/Linux-Distribution-0.14/lib/Linux/Distribution.pm
 
 =cut
+
 
 sub pb_distro_init {
 
@@ -76,9 +83,13 @@ my $dfam = "unknown";
 my $dtype = "unknown";
 my $dsuf = "unknown";
 my $dupd = "unknown";
+my $arch = shift || undef;
 
 # If we don't know which distribution we're on, then guess it
 ($ddir,$dver) = pb_distro_get() if ((not defined $ddir) || (not defined $dver));
+
+# Initialize arch
+$arch=pb_get_arch() if (not defined $arch);
 
 # There should be unicity of names between ddir dfam and dtype
 # In case of duplicate, bad things can happen
@@ -102,9 +113,6 @@ if (($ddir =~ /debian/) ||
 	$dsuf=".$dfam$dver";
 } elsif (($ddir =~ /suse/) ||
 		($ddir =~ /sles/)) {
-	if ($ddir =~ /opensuse/) {
-		$ddir = "suse";
-	}
 	$dfam="novell";
 	$dtype="rpm";
 	$dsuf=".$ddir$dver";
@@ -113,6 +121,7 @@ if (($ddir =~ /debian/) ||
 		($ddir =~ /rhel/) ||
 		($ddir =~ /fedora/) ||
 		($ddir =~ /vmware/) ||
+		($ddir =~ /asianux/) ||
 		($ddir =~ /centos/)) {
 	$dfam="rh";
 	$dtype="rpm";
@@ -120,18 +129,18 @@ if (($ddir =~ /debian/) ||
 	$dver1 =~ s/\.//;
 
 	# By defaut propose yum
-	my $arch=`uname -m`;
 	my $opt = "";
-	chomp($arch);
 	if ($arch eq "x86_64") {
 		$opt="--exclude=*.i?86";
 	}
-	$dupd="sudo yum clean all; sudo yum update ; sudo yum -y $opt install ";
+	$dupd="sudo yum clean all; sudo yum -y update ; sudo yum -y $opt install ";
 	if ($ddir =~ /fedora/) {
 		$dsuf=".fc$dver1";
 	} elsif ($ddir =~ /redhat/) {
 		$dsuf=".rh$dver1";
 		$dupd="unknown";
+	} elsif ($ddir =~ /asianux/) {
+		$dsuf=".asianux$dver1";
 	} elsif ($ddir =~ /vmware/) {
 		$dsuf=".vwm$dver1";
 		$dupd="unknown";
@@ -170,21 +179,14 @@ if (($ddir =~ /debian/) ||
 	$dfam="unknown";
 }
 
-return($ddir, $dver, $dfam, $dtype, $dsuf, $dupd);
+return($ddir, $dver, $dfam, $dtype, $dsuf, $dupd, $arch);
 }
 
-=item B<pb_distro_init>
+=item B<pb_distro_get>
 
-This function returns a list of 5 parameters indicating the distribution name, version, family, type of build system and suffix of packages of the underlying Linux distribution. The value of the 5 fields may be "unknown" in case the function was unable to recognize on which distribution it is running.
+This function returns a list of 2 parameters indicating the distribution name and version of the underlying Linux distribution. The value of those 2 fields may be "unknown" in case the function was unable to recognize on which distribution it is running.
 
-As an example, Ubuntu and Debian are in the same "du" family. As well as RedHat, RHEL, CentOS, fedora are on the same "rh" family.
-Mandriva, Open SuSE and Fedora have all the same "rpm" type of build system. Ubuntu ad Debian have the same "deb" type of build system. 
-And "fc" is the extension generated for all Fedora packages (Version will be added by pb).
-
-When passing the distribution name and version as parameters, the B<pb_distro_init> function returns the parameter of that distribution instead of the underlying one.
-
-Cf: http://linuxmafia.com/faq/Admin/release-files.html
-Ideas taken from http://search.cpan.org/~kerberus/Linux-Distribution-0.14/lib/Linux/Distribution.pm
+On my home machine it would currently report ("mandriva","2009.0").
 
 =cut
 
@@ -202,6 +204,7 @@ my %single_rel_files = (
 	'fedora'			=>	'fedora-release',		# >= 4
 	'vmware'			=>	'vmware-release',		# >= 3
 	'sles'				=>	'sles-release',			# Doesn't exist as of 10
+	'asianux'			=>	'asianux-release',		# >= 2.2
 # Untested
 	'knoppix'			=>	'knoppix_version',		#
 	'yellowdog'			=>	'yellowdog-release',	#
@@ -265,8 +268,9 @@ my %distro_match = (
 	'sles'					=> 'SUSE .* Enterprise Server (\d+) \(',
 	'suse'					=> 'SUSE LINUX (\d.+) \(',
 	'opensuse'				=> 'openSUSE (\d.+) \(',
+	'asianux'				=> 'Asianux (?:Server|release) ([0-9]).* \(',
 	'lsb'					=> '.*[^Ubunt].*\nDISTRIB_RELEASE=(.+)',
-# Ubuntu includes a /etc/debian_version file that cretaes an ambiguity with debian
+# Ubuntu includes a /etc/debian_version file that creates an ambiguity with debian
 # So we need to look at distros in reverse alphabetic order to treat ubuntu always first
 	'ubuntu'				=> '.*Ubuntu.*\nDISTRIB_RELEASE=(.+)',
 	'debian'				=> '(.+)',
@@ -341,7 +345,7 @@ return("unknown","unknown");
 =item B<pb_distro_installdeps>
 
 This function install the dependencies required to build the package on an RPM based distro
-dependencies can be passed as a prameter in which case they are not computed
+dependencies can be passed as a parameter in which case they are not computed
 
 =cut
 
@@ -508,36 +512,25 @@ foreach my $i (split(/,/,$param)) {
 	# The repo file can be a real file or a package
 	if ($dtype eq "rpm") {
 		if ($bn =~ /\.rpm$/) {
-		pb_system("sudo rpm -Uvh $ENV{'PBTMP'}/$bn","Adding package to setup repostory");
-	} elsif ($bn =~ /\.repo$/) {
+			my $pn = $bn;
+			$pn =~ s/\.rpm//;
+			if (pb_system("rpm -q --quiet $pn","","quiet") != 0) {
+				pb_system("sudo rpm -Uvh $ENV{'PBTMP'}/$bn","Adding package to setup repository");
+			}
+		} elsif ($bn =~ /\.repo$/) {
 			# Yum repo
-			pb_system("sudo mv $ENV{'PBTMP'}/$bn /etc/yum.repo.d","Adding yum repository");
+			pb_system("sudo mv $ENV{'PBTMP'}/$bn /etc/yum.repos.d","Adding yum repository") if (not -f "/etc/yum.repos.d/$bn");
 		} elsif ($bn =~ /\.addmedia/) {
 			# URPMI repo
+			# We should test that it's not already a urpmi repo
 			pb_system("chmod 755 $ENV{'PBTMP'}/$bn ; sudo $ENV{'PBTMP'}/$bn 2>&1 > /dev/null","Adding urpmi repository");
 		} else {
 			pb_log(0,"Unable to deal with repository file $i on rpm distro ! Please report to dev team\n");
 		}
 	} elsif ($dtype eq "deb") {
-		if ($bn =~ /\.sources.list$/) {
-			my $aptrepo = "";
-			open(REPO,"$ENV{'PBTMP'}/$bn") || die "Unable to open $ENV{'PBTMP'}/$bn";
-			while (my $repo=<REPO>) {
-				my $found = 0;
-				open(APT,"/etc/apt/sources.list") || die "Unable to open /etc/apt/sources.list";
-				while (my $apt=<APT>) {
-					$found++ if ($apt =~ /$repo/);
-				}
-				close(APT);
-				$aptrepo .= "$repo\n" if ($found == 0);
-			}
-			close(REPO);
-			if ($aptrepo ne "") {
-				pb_system("sudo echo # Added by project-builder.org >> /etc/apt/sources.list");
-				pb_system("sudo echo #  >> /etc/apt/sources.list");
-				pb_system("sudo echo \'$aptrepo\' >> /etc/apt/sources.list");
-			}
-			pb_system("sudo apt-get update","Adding apt repository");
+		if (($bn =~ /\.sources.list$/) && (not -f "/etc/apt/sources.list.d/$bn")) {
+			pb_system("sudo mv $ENV{'PBTMP'}/$bn /etc/apt/sources.list.d","Adding apt repository");
+			pb_system("sudo apt-get update","Updating apt repository");
 		} else {
 			pb_log(0,"Unable to deal with repository file $i on deb distro ! Please report to dev team\n");
 		}
@@ -578,6 +571,8 @@ if (defined $opt->{"$ddir-$dver-$darch"}) {
 return($param);
 
 }
+
+
 =back 
 
 =head1 WEB SITES

@@ -36,7 +36,7 @@ our $pbdisplaytype = "text";
 our $pblocale = "C";
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(pb_mkdir_p pb_system pb_rm_rf pb_get_date pb_log pb_log_init pb_get_uri pb_get_content pb_set_content pb_display_file pb_syntax_init pb_syntax pb_temp_init $pbdebug $pbLOG $pbdisplaytype $pblocale);
+our @EXPORT = qw(pb_mkdir_p pb_system pb_rm_rf pb_get_date pb_log pb_log_init pb_get_uri pb_get_content pb_set_content pb_display_file pb_syntax_init pb_syntax pb_temp_init pb_get_arch $pbdebug $pbLOG $pbdisplaytype $pblocale);
 
 =pod
 
@@ -368,6 +368,22 @@ if (not defined $ENV{'TMPDIR'}) {
 	$ENV{'TMPDIR'}="/tmp";
 }
 $ENV{'PBTMP'} = tempdir( "pb.XXXXXXXXXX", DIR => $ENV{'TMPDIR'}, CLEANUP => 1 );
+}
+
+=item B<pb_get_arch>
+
+This function returns the architecture of our local environment and
+standardize on i386 for those platforms. It also solves issues where a i386 VE on x86_64 returns x86_64 wrongly
+
+=cut
+
+sub pb_get_arch {
+
+my $arch = `uname -m`;
+chomp($arch);
+$arch =~ s/i.86/i386/;
+
+return($arch);
 }
 
 =back 
