@@ -2,6 +2,9 @@
 
 PERL-PROJECTBUILDER CHANGES
 
+0.9.7.1 (2009-07-05)
+- Fix a critical bug on pb, where a module was loaded optionaly with use instead of require (prevents update of VMs) (Bruno Cornec) 
+
 0.9.7 (2009-07-04)
 - pb_distro_init now returns a 7th paramater which is the arch, useful for pbdistrocheck (Bruno Cornec)
 - pb_distro_init accepts now a third parameter (arch) in order to force the setup of the update command for VEs (Bruno Cornec)
