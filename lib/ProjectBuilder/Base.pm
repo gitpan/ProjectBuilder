@@ -36,7 +36,7 @@ our $pbdisplaytype = "text";
 our $pblocale = "C";
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(pb_mkdir_p pb_system pb_rm_rf pb_get_date pb_log pb_log_init pb_get_uri pb_get_content pb_set_content pb_display_file pb_syntax_init pb_syntax pb_temp_init pb_get_arch $pbdebug $pbLOG $pbdisplaytype $pblocale);
+our @EXPORT = qw(pb_mkdir_p pb_system pb_rm_rf pb_get_date pb_log pb_log_init pb_get_uri pb_get_content pb_set_content pb_display_file pb_syntax_init pb_syntax pb_temp_init pb_get_arch pb_check_requirements $pbdebug $pbLOG $pbdisplaytype $pblocale);
 
 =pod
 
@@ -382,8 +382,57 @@ sub pb_get_arch {
 my $arch = `uname -m`;
 chomp($arch);
 $arch =~ s/i.86/i386/;
+# For Solaris
+$arch =~ s/i86pc/i386/;
 
 return($arch);
+}
+
+=item B<pb_check_requirements>
+
+This function checks that the commands needed for the subsystem are indeed present. 
+The required comands are passed as a coma separated string as first parameter.
+The optional comands are passed as a coma separated string as second parameter.
+
+=cut
+
+sub pb_check_requirements {
+
+my $cmds = shift || "";
+my $options = shift || "";
+
+# cmds is a string of coma separated commands
+foreach my $file (split(/,/,$cmds)) {
+	pb_check_req($file,0);
+}
+
+# opts is a string of coma separated commands
+foreach my $file (split(/,/,$options)) {
+	pb_check_req($file,1);
+}
+}
+
+sub pb_check_req {
+
+my $file = shift;
+my $opt = shift || 1;
+my $found = 0;
+
+pb_log(2,"Checking availability of $file...");
+# Check for all dirs in the PATH
+foreach my $p (split(/:/,$ENV{'PATH'})) {
+	$found = 1 if (-x "$p/$file");
+}
+if ($found eq 0) {
+	pb_log(2,"KO\n");
+	if ($opt eq 1) {
+		pb_log(2,"Unable to find optional command $file\n");
+	} else {
+		die pb_log(0,"Unable to find required command $file\n");
+	}
+} else {
+	pb_log(2,"OK\n");
+}
 }
 
 =back 

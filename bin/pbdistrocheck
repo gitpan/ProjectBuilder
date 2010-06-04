@@ -14,9 +14,70 @@ use lib qw (lib);
 use ProjectBuilder::Distribution;
 use ProjectBuilder::Base;
 
+=pod
+
+=head1 NAME
+
+pb, aka project-builder.org - builds packages for your projects
+
+=head1 DESCRIPTION
+
+pb helps you build various packages directly from your project sources.
+pbdistrocheck is a command from the pb project providing the same type of services as lsb_release, but extended.
+
+=head1 SYNOPSIS
+
+pbdistrocheck [-d][-v] [distro-ver-arch]
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-v|--verbose>
+
+Print a brief help message and exits.
+
+=item B<-d|--description>
+
+generate a short format user friendly
+(by default, generate a longer format, comma separated allowing parsing)
+
+=back 
+
+=head1 ARGUMENTS
+
+arguments are optional. If none given, analyzes the underlying operating system
+If one is given, it should have the format osname-version-architecture, and in that case pbdistrocheck will provide all the information related to that OS needed by pb.
+
+=head1 WEB SITES
+
+The main Web site of the project is available at L<http://www.project-builder.org/>. Bug reports should be filled using the trac instance of the project at L<http://trac.project-builder.org/>.
+
+=head1 USER MAILING LIST
+
+Cf: L<http://www.mondorescue.org/sympa/info/pb-announce> for announces and L<http://www.mondorescue.org/sympa/info/pb-devel> for the development of the pb project.
+
+=head1 CONFIGURATION FILES
+
+Uses the main /etc/pb/pb.conf (or /usr/local/etc/pb/pb.conf if installed from files) configuration file to give its answers.
+
+=head1 AUTHORS
+
+The Project-Builder.org team L<http://trac.project-builder.org/> lead by Bruno Cornec L<mailto:bruno@project-builder.org>.
+
+=head1 COPYRIGHT
+
+Project-Builder.org is distributed under the GPL v2.0 license
+described in the file C<COPYING> included with the distribution.
+
+=cut
+
 my %opts;					# CLI Options
 
-GetOptions("verbose|v+" => \$opts{'v'});
+GetOptions(
+		"verbose|v+" => \$opts{'v'},
+		"description|d" => \$opts{'d'}
+);
 if (defined $opts{'v'}) {
 	$pbdebug = $opts{'v'};
 }
@@ -27,5 +88,13 @@ if (defined $opts{'l'}) {
 	}
 pb_log_init($pbdebug, $pbLOG);
 
-my ($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd, $arch) = pb_distro_init();
-print "distro tuple: ".join(',',($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd, $arch))."\n";
+my $dist = shift @ARGV || undef ;
+my @param = undef;
+@param = split(/-/,$dist) if (defined $dist);
+
+my ($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd, $arch) = pb_distro_init(@param);
+if (defined $opts{'d'}) {
+	print "\u$ddir $dver $arch\n";
+} else {
+	print "distro tuple: ".join(',',($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd, $arch))."\n";
+}

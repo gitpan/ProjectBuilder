@@ -2,8 +2,33 @@
 
 PERL-PROJECTBUILDER CHANGES
 
+0.9.9 (2010-04-29)
+- Fix a bug in the analysis of Build-Requires (middle packages were missed) (Bruno Cornec)
+- Improve conf when starting from scratch (pbproj undefined) (Bruno Cornec)
+- Improves debian build (tab/space were mixed) (Bruno Cornec)
+- Adds Centos support for setup of VE (Bruno Cornec)
+- pbdistrocheck now has a man page (Bruno Cornec)
+- Split function pb_env_init and add function pb_env_init_pbrc needed for rpmbootstrap (Bruno Cornec)
+- Adds function pb_check_requirements and use it in pb (Bruno Cornec)
+- pb_distro_get_param now can expand some variables before returning a value (Bruno Cornec)
+- fedora-12 package list updated (Bruno Cornec)
+- Rename options: veconf => rbsconf, ve4pi => rbs4pi, vepkglist => vemindep (Bruno Cornec)
+- new pb_get_postinstall generic function for rinse and rpmbootstrap (Bruno Cornec)
+- verebuild, ventp/vmntp are now optional (Bruno Cornec)
+- vetmout removed (Bruno Cornec)
+- Fixes to support ia64 chroot with centos5 - ongoing (Bruno Cornec)
+
+0.9.8 (2009-10-24)
+- Removes dependency on GNU install to be more portable (Bruno Cornec)
+- Improves setupvm for RHEL 3 (Bruno Cornec)
+- Add support for Fedora 12, Mandriva 2010.0, OpenSuSE 11.2, Ubuntu 9.10 (Bruno Cornec)
+- Do not add conf files if already present in the list (changing pbconffiles into a hash for that to still keep order as this is mandatory) (Bruno Cornec)
+- Adds Solaris port, Solaris build files, generation of Solaris build file skeleton (Bruno Cornec)
+- Externalize in /etc/pb/pb.conf all distribution dependant information formely in Distribution.pm (Bruno Cornec)
+- Adds option support for pbdistrocheck (-v and -d)
+
 0.9.7.1 (2009-07-05)
-- Fix a critical bug on pb, where a module was loaded optionaly with use instead of require (prevents update of VMs) (Bruno Cornec) 
+- Fix a critical bug on pb, where a module was loaded optionaly with use instead of require (prevents update of VMs) (Bruno Cornec)
 
 0.9.7 (2009-07-04)
 - pb_distro_init now returns a 7th paramater which is the arch, useful for pbdistrocheck (Bruno Cornec)

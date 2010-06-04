@@ -23,8 +23,14 @@ use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(pb_conf_init pb_conf_add pb_conf_read pb_conf_read_if pb_conf_get pb_conf_get_if);
 
-# Global list of conf files
-our @pbconffiles = ();
+# Global hash of conf files
+# Key is the conf file name
+# Value is its rank
+my %pbconffiles;
+
+# Global hash of cached values. 
+# We consider that values can not change during the life of pb
+# my %cachedval;
 
 =pod
 
@@ -52,9 +58,9 @@ This modules provides functions dealing with configuration files.
 
 =item B<pb_conf_init>
 
-This function setup the environment PBPROJ for project-builder function usage rfom other projects.
+This function setup the environment PBPROJ for project-builder function usage from other projects.
 The first parameter is the project name.
-It sets up environement variables (PBPROJ) 
+It sets up environment variables (PBPROJ) 
 
 =cut
 
@@ -80,7 +86,15 @@ This function adds the configuration file to the list last.
 sub pb_conf_add {
 
 pb_log(2,"DEBUG: pb_conf_add with ".Dumper(@_)."\n");
-push(@pbconffiles,@_);
+
+foreach my $cf (@_) {
+	# Skip already used conf files
+	next if (defined $pbconffiles{$cf});
+	# Add the new one at the end
+	my $num = keys %pbconffiles;
+	pb_log(2,"DEBUG: pb_conf_add $cf at position $num\n");
+	$pbconffiles{$cf} = $num;
+}
 }
 
 =item B<pb_conf_read_if>
@@ -155,7 +169,7 @@ return(@ptr);
 
 =item B<pb_conf_get_if>
 
-This function returns a table, corresponding to a set of values querried in the conf files or undef if it doen't exist. It takes a table of keys as an input parameter.
+This function returns a table, corresponding to a set of values queried in the conf files or undef if it doen't exist. It takes a table of keys as an input parameter.
 
 The format of the configurations file is as follows:
 
@@ -190,8 +204,9 @@ my @param = @_;
 
 my $ptr = undef;
 
-# the most important conf file is first, so read them in revers order
-foreach my $f (reverse @pbconffiles) {
+# the most important conf file is first, so read them in reverse order
+foreach my $f (reverse sort { $pbconffiles{$a} <=> $pbconffiles{$b} } keys %pbconffiles) {
+	pb_log(2,"DEBUG: pb_conf_get_if in file $f\n");
 	$ptr = pb_conf_get_fromfile_if("$f",$ptr,@param);
 }
 
@@ -227,12 +242,17 @@ my @ptr2 = ();
 my $p1;
 my $p2;
 
-pb_log(2,"DEBUG: pb_conf_get $conffile: ".Dumper(@ptr1)."\n");
-pb_log(2,"DEBUG: pb_conf_get input: ".Dumper(@ptr2)."\n");
-pb_log(2,"DEBUG: pb_conf_get param: ".Dumper(@param)."\n");
+pb_log(2,"DEBUG: pb_conf_get_from_file $conffile: ".Dumper(@ptr1)."\n");
+pb_log(2,"DEBUG: pb_conf_get_from_file input: ".Dumper(@ptr2)."\n");
+pb_log(2,"DEBUG: pb_conf_get_from_file param: ".Dumper(@param)."\n");
 
 foreach my $i (0..$#param) {
 	$p1 = $ptr1[$i];
+	# Optimisation doesn't seem useful
+	# if ((defined $p1) && (defined $cachedval{$p1})) {
+	# $ptr1[$i] = $cachedval{$p1};
+	# next;
+	# }
 	$p2 = $ptr2[$i];
 	# Always try to take the param from ptr1 
 	# in order to mask what could be defined already in ptr2
@@ -270,6 +290,8 @@ foreach my $i (0..$#param) {
 		}
 	}
 	$ptr1[$i] = $p1;
+	# Cache values to avoid redoing all that analyze when asked again on a known value
+	# $cachedval{$p1} = $p1;
 }
 pb_log(2,"DEBUG: pb_conf_get output: ".Dumper(@ptr1)."\n");
 return(\@ptr1);
@@ -285,11 +307,18 @@ sub pb_conf_get {
 
 my @param = @_;
 my @return = pb_conf_get_if(@param);
+my $proj = undef;
 
-die "No params found for $ENV{'PBPROJ'}" if (not @return);
+if (not defined $ENV{'PBPROJ'}) {
+	$proj = "unknown";
+} else {
+	$proj = $ENV{'PBPROJ'};
+}
+
+die "No params found for $proj" if (not @return);
 
 foreach my $i (0..$#param) {
-	die "No $param[$i] defined for $ENV{'PBPROJ'}" if (not defined $return[$i]);
+	die "No $param[$i] defined for $proj" if (not defined $return[$i]);
 }
 return(@return);
 }

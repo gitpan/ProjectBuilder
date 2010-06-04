@@ -1,11 +1,214 @@
-2009-07-05  Bruno Cornec <bruno@project-builder.org>
+2010-04-29  Bruno Cornec <bruno@project-builder.org>
 
-	* [r806] Creation of
-	  svn+ssh://svn.project-builder.org/mondo/svn/pb///0.9.7.1 from
-	  svn+ssh://svn.project-builder.org/mondo/svn/pb//0.9.7
-	* [r801] Creation of
-	  svn+ssh://svn.project-builder.org/mondo/svn/pb///0.9.7 from
+	* [r1018] Creation of
+	  svn+ssh://svn.project-builder.org/mondo/svn/pb///0.9.9 from
 	  svn+ssh://svn.project-builder.org/mondo/svn/pb//devel
+
+2010-04-28  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1015] Fixes to support ia64 chroot with centos5
+
+2010-04-14  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1008] Mandrake should keep their '.' in version name
+
+2010-04-12  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1005] - Project-Builder.org is licensed under the GPL v2 for
+	  the moment.
+
+2010-03-03  Bruno Cornec <bruno@project-builder.org>
+
+	* [r993] r3719@localhost: bruno | 2010-03-03 19:10:43 +0100
+	  - Improvements for mandriva chroot. GPG check still not working
+	* [r992] r3713@localhost: bruno | 2010-03-02 23:13:29 +0100
+	  - Adds support for mandriva in rpmbootstrap - Not finished yet.
+	  chroot should be able to call urpmi
+
+2010-03-01  Bruno Cornec <bruno@project-builder.org>
+
+	* [r991] r3711@localhost: bruno | 2010-03-01 07:29:29 +0100
+	  - veconf => rbsconf
+	  - Adds option -a to rpmbootstrap in order for pb to automatically
+	  install the packages it needs
+	  - Check CentOS4 VE OK
+	  - Adds pb.conf man page to spec build
+
+2010-02-24  Bruno Cornec <bruno@project-builder.org>
+
+	* [r990] r3709@localhost: bruno | 2010-02-22 22:05:32 +0100
+	  - First addition of OpenSUSE support in rpmbootstrap
+
+2010-02-23  Bruno Cornec <bruno@project-builder.org>
+
+	* [r989] r3705@localhost: bruno | 2010-02-22 01:48:44 +0100
+	  - Improved pod format for pb.conf.pod
+	  - man page generated from pod now included in Makefile.PL and
+	  packages
+	  - Move the pod file into the etc conf dir
+
+2010-02-21  Bruno Cornec <bruno@project-builder.org>
+
+	* [r986] r3700@localhost: bruno | 2010-02-20 16:35:59 +0100
+	  - Continue to improve pb.conf documentation
+	  - veconf renamed as rbsconf
+	  - ve4pi renamed rbs4pi
+	  - new pb_get_postinstall generic function for rinse and
+	  rpmbootstrap
+	  - ventp/vmntp is now optional
+	  - licom_err needed by fedora 12
+	  - make rpmbootstrap work for i386 distros
+
+2010-02-20  Bruno Cornec <bruno@project-builder.org>
+
+	* [r984] - Fix fedora 12: now installing in VE with rpmbootstrap
+	  - First fully rpmbootstrap working version. Now needs more
+	  testing with other fedora versions, and opensuse/mandriva
+	  adaptation
+	* [r983] - rpmbootstrap good up to package name identification
+	  - fedora-12 package list updated
+
+2010-02-19  Bruno Cornec <bruno@project-builder.org>
+
+	* [r982] - Fix variable substitution which was too aggressive in
+	  pb_distro_get_param
+	* [r974] - Adds function pb_check_requirements and use it in pb
+	  - Adds some conf params for rpmbootstrap in conf file
+	  - pb_distro_get_param now can expand some variables before
+	  returning a value
+
+2010-02-18  Bruno Cornec <bruno@project-builder.org>
+
+	* [r971] - First packages built and delivered with deboostrap
+	  (solve the shell expansion which should not be done for VE)
+	  - Previous snapshot removed before trying to create a new one to
+	  avoid useless extraction
+
+2010-02-16  Bruno Cornec <bruno@project-builder.org>
+
+	* [r969] - Fix a bug for suffix computation, following the change
+	  of interface for pb_distro_get_param
+	  - pbdistrocheck now has a man page. Build files adapted
+	  accordingly
+
+2010-02-15  Bruno Cornec <bruno@project-builder.org>
+
+	* [r968] - Use pbsnap in pb_script2v instead of forcing no snapshot
+	  - use x86_64 arch for debian, and only amd64 for debootstrap call
+	  - debootstrap doesn't create a /etc/hosts file, so copy the local
+	  one in the VE
+	  - debian version do not include by default subversion (5.0 vs
+	  5.0.4)
+	  - Announce of pb pres at slideshare
+
+2010-02-08  Bruno Cornec <bruno@project-builder.org>
+
+	* [r964] r3659@localhost: bruno | 2010-02-07 02:02:22 +0100
+	  - Now we have debootstrap working (on Mandriva) for VE.
+	* [r963] r3658@localhost: bruno | 2010-02-07 00:15:25 +0100
+	  - Fix a bug in newve, by calling pb_distrib_init earlier to have
+	  the loading of the pb.conf main conf file, used to install
+	  default packages.
+
+2010-02-07  Bruno Cornec <bruno@project-builder.org>
+
+	* [r962] r3656@localhost: bruno | 2010-02-06 20:14:21 +0100
+	  - Adds a reference document for all configuration files
+	  parameters (half done)
+	  - Fix typo in pod format for Distribution.pm
+	  - Adds centos support for setup of VE
+
+2009-12-17  Bruno Cornec <bruno@project-builder.org>
+
+	* [r938] Adds LSB support description in conf file
+
+2009-12-05  Bruno Cornec <bruno@project-builder.org>
+
+	* [r932] - Improve conf when starting from scratch (pbproj
+	  undifined)
+	* [r931] - Fix a bug in the analysis of Build-Requires (middle
+	  packages were missed)
+
+2009-11-27  Bruno Cornec <bruno@project-builder.org>
+
+	* [r915] - Remove the dependency on GNU install in Makefile.PL in
+	  order to make it more portable (Solaris)
+
+2009-11-25  Bruno Cornec <bruno@project-builder.org>
+
+	* [r911] - Improve fedora deps for setupvm
+	* [r910] - Improve Solaris setupvm
+	  - Improve fedora 12 deps
+	* [r909] - setupvm for rhel-3
+
+2009-11-24  Bruno Cornec <bruno@project-builder.org>
+
+	* [r908] - Force bash usage in pb to be OS compatible
+	  - Solaris setupvm improvements
+	  - Module-Build is now version 0.35 by default
+	* [r907] - Other improvements for opensuse
+	  - Warn at end of newvm about sshd+root access needed in VM
+	* [r906] - Improves opensuse deps for setupvm
+
+2009-11-20  Bruno Cornec <bruno@project-builder.org>
+
+	* [r899] r3617@localhost: bruno | 2009-11-15 13:33:01 +0100
+	  Improve case where the build file description if undef (seen in
+	  cms2vm)
+
+2009-11-10  Bruno Cornec <bruno@project-builder.org>
+
+	* [r898] - Do not add conf files if already present in the list
+	  (changing pbconffiles into a hash for that to still keep order as
+	  this is mandatory)
+	  - Small optimisations for pb_conf function usage in pb
+
+2009-10-29  Bruno Cornec <bruno@project-builder.org>
+
+	* [r892] - remove call to bash to use generic sh. This has o be
+	  checked for compatibility issues
+	  - In conf file, when having a dependency on Module-Build, it has
+	  to be first, as some other may depend on it
+
+2009-10-28  Bruno Cornec <bruno@project-builder.org>
+
+	* [r891] - setuptvm now uses as well the conf file
+	  - removal of hardcoded stuff in pb_install_deps
+	  - conf file updated with new contetn for setupvm
+	  - Variable for the home dir (not /home on Solaris)
+
+2009-10-21  Bruno Cornec <bruno@project-builder.org>
+
+	* [r873] First round of Solaris fixes
+	* [r869] - function pb_distro_get now also uses the external
+	  pb.conf conf file. Nothing is hard coded anymore in the
+	  Distribution.pm which will make porting and adaptations by users
+	  much easier.
+	* [r867] - Transition static distribution into a configuration file
+	  typically /etc/pb/pb.conf
+	  - function pb_distro_init adapted to use the new conf file
+	  - function pb_distro_get_param adapted to support osfamily and
+	  ostype
+	  - Adapt the package building of pb to the need of the new
+	  configuration file
+
+2009-10-19  Bruno Cornec <bruno@project-builder.org>
+
+	* [r866] Prepare a new conf file for pb-modules, which will contain
+	  all the specificities of pb wrt distributions/OS and will allow
+	  to make it customizable by admin instead of coded inside the
+	  project
+
+2009-08-20  Bruno Cornec <bruno@project-builder.org>
+
+	* [r839] - Adds option support for pbdistrocheck (-v and -d)
+	  - Fix a bug on pbvi/pbg for function having binary in their name
+
+2009-07-14  Bruno Cornec <bruno@project-builder.org>
+
+	* [r829] r3259@localhost: bruno | 2009-07-12 19:59:58 +0200
+	  Adds an Augeas lense to project-builder to make conf file
+	  analysis more easy.
 
 2009-05-03  Bruno Cornec <bruno@project-builder.org>
 
