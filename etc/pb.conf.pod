@@ -303,13 +303,21 @@ osrelexpr rhel = Red Hat (?:Enterprise Linux|Linux Advanced Server) .*release ([
  Conffile: ve
  Example: rbsb4pi centos = /home/rinse/bin/before-post-install.sh
 
+=item B<rbsopt>
+
+ Nature: Optional
+ Key: tool used for rpm based VE. Could be one of rpmbootstrap, rinse, mock, ...
+ Value: Additional option to pass to the command
+ Conffile: ve
+ Example: rbsopt rpmbootstrap = -k
+
 =item B<rbspi>
 
  Nature: Optional
  Key: OS (could be from the most generic up to the most specific from ostype, osfamily, os, os-ver, os-ver-arch). The family name is generaly used here.
  Value: for mock it's not used. For rinse it's the script to call after doing installation for customization. For rpmbootstrap it's the script to call after doing installation for customization.
  Conffile: ve
- Example: pbrpi centos = /home/rinse/bin/post-install.sh
+ Example: rbspi centos = /home/rinse/bin/post-install.sh
 
 =item B<supfiles>
 
@@ -346,14 +354,6 @@ Not used yet.
  Value: account name to use in the VE to build packages.
  Conffile: ve
  Example: velogin default = pb
-
-=item B<vemindep>
-
- Nature: Optional
- Key: OS (could be from the most generic up to the most specific from ostype, osfamily, os, os-ver, os-ver-arch). NB: a default value per OS family is interesting here.
- Value: coma separated list of packages needed before pb can be run in the VE. Installed automatically in setupve phase.
- Conffile: ve
- Example: vemindep rpm = rpm-build,diffutils,ntpdate, vemindep deb = diff
 
 =item B<ventp>
 

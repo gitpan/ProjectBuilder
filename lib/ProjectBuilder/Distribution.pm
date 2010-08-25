@@ -166,6 +166,10 @@ my $distro;
 # that way we reduce the choice
 my ($d,$r);
 while (($d,$r) = each %$single_rel_files) {
+	if (defined $ambiguous_rel_files->{$d}) {
+		print STDERR "The key $d is considered as both unambiguous and ambigous.\n";
+		print STDERR "Please fix your configuration file.\n"
+	}
 	if (-f "$r" && ! -l "$r") {
 		my $tmp=pb_get_content("$r");
 		# Found the only possibility. 
@@ -182,7 +186,7 @@ while (($d,$r) = each %$single_rel_files) {
 }
 
 # Now look at ambiguous files
-# Ubuntu includes a /etc/debian_version file that creates an ambiguity with debian
+# Ubuntu before 10.04 includes a /etc/debian_version file that creates an ambiguity with debian
 # So we need to look at distros in reverse alphabetic order to treat ubuntu always first via lsb
 foreach $d (reverse keys %$ambiguous_rel_files) {
 	$r = $ambiguous_rel_files->{$d};
@@ -444,7 +448,7 @@ if (defined $opt->{"$ddir-$dver-$darch"}) {
 }
 
 # Allow replacement of variables inside the parameter such as ddir, dver, darch for rpmbootstrap 
-# but not shell variable which ae backslashed
+# but not shell variable which are backslashed
 if ($param =~ /[^\\]\$/) {
 	pb_log(3,"Expanding variable on $param\n");
 	eval { $param =~ s/(\$\w+)/$1/eeg };

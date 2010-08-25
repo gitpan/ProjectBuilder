@@ -215,7 +215,7 @@ return(@$ptr);
 
 =item B<pb_conf_fromfile_if>
 
-This function returns a pointer on a table, corresponding to a merge of values querried in the conf file and the pointer on another table passed as parameter. It takes a table of keys as last input parameter.
+This function returns a pointer on a table, corresponding to a merge of values queried in the conf file and the pointer on another table passed as parameter. It takes a table of keys as last input parameter.
 
   my ($k1) = pb_conf_fromfile_if("$HOME/.pbrc",undef,"pbver","pblist");
   my ($k2) = pb_conf_fromfile_if("$HOME/.pbrc3",$k1,"pbver","pblist");

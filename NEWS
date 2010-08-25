@@ -2,7 +2,14 @@
 
 PERL-PROJECTBUILDER CHANGES
 
-0.9.9 (2010-04-29)
+0.9.10 (2010-06-07)
+- Add support for Ubuntu 10.04 natively and with debootstrap (universe repo needed) (Bruno Cornec)
+- Project-Builder.org is licensed under the GPL v2 for the moment. (Bruno Cornec)
+- Remove the useless vemindep option and fix ospkgdep accordingly (Bruno Cornec)
+- Adds rbsopt parameter + doc to allow for passing options to rpmbootstrap such as -k now by default. (Bruno Cornec)
+- Update perl modules versions (Date-Manip is now in 6.x, still using 5.x at the moment) (Bruno Cornec)
+
+0.9.9 (2010-05-01)
 - Fix a bug in the analysis of Build-Requires (middle packages were missed) (Bruno Cornec)
 - Improve conf when starting from scratch (pbproj undefined) (Bruno Cornec)
 - Improves debian build (tab/space were mixed) (Bruno Cornec)

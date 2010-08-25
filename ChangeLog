@@ -1,8 +1,42 @@
-2010-04-29  Bruno Cornec <bruno@project-builder.org>
+2010-06-07  Bruno Cornec <bruno@project-builder.org>
 
-	* [r1018] Creation of
-	  svn+ssh://svn.project-builder.org/mondo/svn/pb///0.9.9 from
+	* [r1040] Creation of
+	  svn+ssh://svn.project-builder.org/mondo/svn/pb///0.9.10 from
 	  svn+ssh://svn.project-builder.org/mondo/svn/pb//devel
+	* [r1038] - Update log files for 0.9.10 generation
+
+2010-06-04  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1036] - Add support for mirror server to debootstrap command
+
+2010-05-23  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1035] - Alternative download URL for Fedora (more complete ?)
+	  - no requiretty for root as well
+	  - VE for Mandriva 2009.1 now works (package list correct - no
+	  code change)
+
+2010-05-22  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1031] - the repodata dir is now search in the parents dir of
+	  the mirror given as it depends on yum version. CentOS 4 & 5,
+	  Fedora 12 OK.
+	  - Update perl modules versions (Date-Manip is now in 6.x, still
+	  using 5.x at the moment)
+	* [r1030] - Add support for Ubuntu 10.04 with debootstrap (universe
+	  repo needed)
+	  - Add support of option rbsopt for deb based distro
+
+2010-05-21  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1029] - Fix umask propagation in VE, fixing issues in directory
+	  creation with wrong rights
+	  - Remove the useless vemindep option and fix ospkgdep accordingly
+	  - Fix the rights for the dev dir in rpmbootstrap
+	* [r1027] - Adds rbsopt parameter + doc to allow for passing
+	  options to rpmbootstrap such as -k now by default.
+	  - Mandriva VE are now working (tested with 2010.0 + package list
+	  fixed)
 
 2010-04-28  Bruno Cornec <bruno@project-builder.org>
 
