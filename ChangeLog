@@ -1,8 +1,232 @@
+2011-01-15  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1162] Creation of
+	  svn+ssh://svn.project-builder.org/mondo/svn/pb///0.10.1 from
+	  svn+ssh://svn.project-builder.org/mondo/svn/pb//devel
+	* [r1159] - Fix a bug in gentoo generation
+	  - redhat extension set by default to rh
+
+2011-01-13  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1157] - Introduce placholders for HP-UX port in pb.conf
+	* [r1156] - Adds a global variable REVISION for version management
+	  - Do not return in pb_send2target if pb file not available in
+	  order to shutdown VM in all cases
+	  - Code and test sbx2setupvm
+	  - setup_v now needs a fake pb_version_init fct added at the end
+	  of the script
+	  - Fix pbdistrocheck install comand printing
+	  - Fix mandralinux old distro build in pb.conf (Note only non
+	  symlink release files are important)
+
+2011-01-12  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1155] - Fix a bug in dir delivery due to the recent change
+	  using the arch subdir to avoid conflicts
+	  - Fix bug for ol mandrake release which were not built correctly
+	  due to configuration file issues (mix of mandrake and
+	  mandrakelinux)
+	* [r1153] - Avoid File::MimeInfo hard requirement. Only abort if
+	  not found when needed.
+	  - Improve report when a perl module is missing
+	  - Kill an existing crashed VM using an SSH port needed for
+	  another VM (should avoid crashed VM to stay when building for all
+	  VMs)
+	  - Use a new parameter vmbuildtm as a timeout before killing the
+	  VM (shoudl correspond to build + transfer time)
+	  - use twice the number of VMs for ports in the range for SSH
+	  communication to allow for VMs to finish in an unordered way.
+	  - Fix a bug in test modules when using Test simple only
+	  - Mail::Sendmail is now optional for Log module as well, even if
+	  not used yet
+	  - Update pb.conf doc with info for vmbuildtm and vmmem
+	  - Ready for 0.10.1
+
+2011-01-11  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1148] - Most modules now have a VERSION declared
+	  - Moulde Version.pm move to pb-modules due to that
+	* [r1147] - A inimal version of Test::More is required to perform
+	  test (especially on older version). Now fixed
+
+2011-01-06  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1137] - build2pkg is now using Parallel::ForkManager to
+	  generate packages in parallel
+	  - pb_system fixed to support parallel calls
+
+2010-12-23  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1133] - Adds related documentation to parameter changes of
+	  previous update
+	* [r1132] - Adds params to pb_distro_setuprepo to support generic
+	  family/os templates
+	  - Fix pbinstalltype issue (setupve was broken) by useing a dsitro
+	  based hash
+	  - Use new pb.conf variable (ospkg and osrepo for pkg install)
+	  - Adds function pb_distro_setuposrepo to setup pb install repo
+	  - Adds a private pb_distro_setuprepo_gen function for code share
+	  between pb_distro_setuposrepo and pb_distro_setuprepo
+	  - Move the relative conf parameters from pb.pb to pb.conf
+
+2010-12-22  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1131] r4123@localhost: bruno | 2010-12-22 19:15:45 +0100
+	  - Adds a default pbinstalltype for projects as pkg
+
+2010-12-21  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1128] - pb_check_requirements now takes direct result from
+	  pb_conf_get_if and does more internal work, which ease caller.
+	* [r1127] - Modify pb_check_req interface to return the found value
+	  and allow direct call
+	  - Use pb_check_req to avoid some hardcoded path
+
+2010-12-13  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1126] - Use potentially Sys::CPU if present to determine number
+	  of cores (1 by default)
+	  - Adds a conf param to force number of cores (pbparallel)
+	  - Adds doc for pbparallel, oscmd, oscmdopt
+
+2010-12-12  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1123] - Improve update commands for gentoo and debian as per
+	  #70 comments and fix it.
+
+2010-12-04  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1120] - remove the test on the '>' char in pb_stsem as there
+	  are too many false positive. Use "noredir" in pbinit of website
+	  instead.
+	  - Adds support for -t option to prepare a builbot or similar
+	  interface.
+
+2010-11-26  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1117] r4058@localhost: bruno | 2010-11-26 11:42:34 +0100
+	  - New Web site management with 4 targtes instead of only 2
+	  (sbx2webssh, ...)
+	* [r1115] r4056@localhost: bruno | 2010-11-25 19:38:07 +0100
+	  - Fix a bug in pb_system when using redirctions in the command
+
+2010-11-18  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1111] - Rename previous option osupd into the more correct
+	  osins, and add a real osupd param to support distribution update
+	  commands
+	  - Adds 2 new commands to update distributions in VM|VE with
+	  updatevm|ve (Fix #70)
+
+2010-11-17  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1109] r4041@localhost: bruno | 2010-11-17 11:40:41 +0100
+	  - Adds new configuration parameters (oschkcmd, oschkopt) to
+	  externalize package checking command
+	  - Adds new configuration parameters (pbinstalltype, pbpkg) to
+	  start allowing installation of pb in VM/VE with packages or files
+	  (this last is only needed by upstream)
+	  - Remove dependency on Mail::Sendmail to where it's really needed
+	  (part of Log, not used yet, and annouce). In particular this
+	  removes one non std dep for VE/VM build.
+	* [r1108]
+	* [r1107] r4032@localhost: bruno | 2010-11-08 15:51:53 +0100
+	  - Change dependency on Mail::Sendmail from use to require, as
+	  it's only used in pb_announce, so not in VE/VM
+
+2010-11-14  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1106] - Avoids to force a dep on Test::More. Just use Test and
+	  a fake test if Test::More is not available.
+	* [r1105] - No error message if chcon fails in setupvm
+	  - Add support for RHEL6 setupvm and improve Fedora as well
+
+2010-11-10  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1102] - Fix sbx2ssh call
+	  - Improve yum-arch call
+
+2010-11-04  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1100] - Adds fedora 14 support for rpmbootstrap
+
+2010-09-20  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1093] r4077@localhost: bruno | 2010-09-20 17:01:36 +0200
+	  - Improve Fedora 13 VE support
+
+2010-09-05  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1090] r4004@localhost: bruno | 2010-09-06 00:18:33 +0200
+	  - Fix #66: Adds log management (contribution from joachim).
+	  Starting point, as some more work has to be done around it.
+
+2010-08-08  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1081] - Solve most lintian errors for Ubuntu 10.04 - Prepare
+	  for another Debian submission
+
+2010-07-25  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1078] - Fix an issue in VE setup with the new delivery variable
+	  (forgot indirection)
+	  - Fix Mandriva 2010.1 VE built with right dep pkg list
+	* [r1077] r3961@localhost: bruno | 2010-07-22 22:39:23 +0200
+	  - Increase number of tests for Base
+	* [r1076] r3960@localhost: bruno | 2010-07-22 22:11:48 +0200
+	  - Fix a bug on pb_get_uri revealed by introduction of first
+	  successful set of tests ;-) (TBC)
+	  - Add support for mandriva 2010.1
+	* [r1074] - Adds rbsdeplist for Mandriva 2010.1 VE
+
+2010-07-12  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1072] r3953@sge91-1-82-234-15-218: bruno | 2010-07-11 23:43:35
+	  +0200
+	  - Fix partly #41 by externalizing the VM command in the new vmcmd
+	  option
+	* [r1071] r3947@sge91-1-82-234-15-218: bruno | 2010-07-10 18:40:35
+	  +0200
+	  - Adds function pb_distro_getlsb and make pbdistrocheck fully
+	  lsb_release compatible
+	* [r1067] r3941@sge91-1-82-234-15-218: bruno | 2010-06-30 17:25:48
+	  +0200
+	  Adds a new optional parameter for pb_distro_get_param (upper
+	  family such as linux)
+
+2010-06-27  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1066] r3935@dhcp184-49-175-19: bruno | 2010-06-26 08:40:49
+	  +0200
+	  - Adds new "Walt Disney" feature: possibility to deliver in
+	  multiple variable dirs, and not just / and test
+	* [r1064] r3931@dhcp184-49-175-19: bruno | 2010-06-26 08:02:59
+	  +0200
+	  - Adds the notion of os at the top in order to provide an even
+	  better tuple management
+
+2010-06-25  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1063] r3929@dhcp184-49-175-84: bruno | 2010-06-24 05:12:13
+	  +0200
+	  - Modify pb_display_file interface to allow printing to a logfile
+	  in addition if reqested to
+
+2010-06-21  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1060] r3906@wsip-70-165-197-185: bruno | 2010-06-20 08:04:11
+	  +0200
+	  - Force printing on stdout in pb_log if 0 level
+
+2010-06-13  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1052] r3866@localhost: bruno | 2010-06-09 23:43:23 +0200
+	  - Add support for LSB 3.2
+	* [r1050] r3864@localhost: bruno | 2010-06-09 23:41:19 +0200
+	  - remove all dots in version when asked to
+
 2010-06-07  Bruno Cornec <bruno@project-builder.org>
 
-	* [r1040] Creation of
-	  svn+ssh://svn.project-builder.org/mondo/svn/pb///0.9.10 from
-	  svn+ssh://svn.project-builder.org/mondo/svn/pb//devel
 	* [r1038] - Update log files for 0.9.10 generation
 
 2010-06-04  Bruno Cornec <bruno@project-builder.org>

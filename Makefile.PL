@@ -7,7 +7,7 @@ use strict;
 WriteMakefile(
 	NAME         => 'ProjectBuilder',
 	DISTNAME     => 'ProjectBuilder',
-	VERSION      => '0.9.10',
+	VERSION      => '0.10.1',
 	INST_SCRIPT  => 'blib/bin',
 	INSTALLDIRS  => 'perl',
 	PREREQ_PM    => {
@@ -21,6 +21,8 @@ WriteMakefile(
 	MAN3PODS      => {	'lib/ProjectBuilder/Distribution.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Distribution.$(MAN3EXT)',
 						'lib/ProjectBuilder/Conf.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Conf.$(MAN3EXT)',
 						'lib/ProjectBuilder/Display.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Display.$(MAN3EXT)',
+						'lib/ProjectBuilder/Log.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Log.$(MAN3EXT)',
+						'lib/ProjectBuilder/Log/Item.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Log::Item.$(MAN3EXT)',
 						'lib/ProjectBuilder/Base.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Base.$(MAN3EXT)', },
 );
 
@@ -57,6 +59,6 @@ sub postamble {
 
 	# Produce the man page for pb.conf
 	$text .= "\t".'mkdir -p $(DESTDIR)'."$mandir/man5\n";
-	$text .= "\t".'pod2man etc/pb.conf.pod > $(DESTDIR)'."$mandir/man5/pb.conf.5\n";
+	$text .= "\t".'pod2man --section=5 etc/pb.conf.pod > $(DESTDIR)'."$mandir/man5/pb.conf.5\n";
 	return($text);
 }

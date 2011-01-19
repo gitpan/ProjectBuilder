@@ -12,9 +12,11 @@ package ProjectBuilder::Conf;
 use strict;
 use Data::Dumper;
 use ProjectBuilder::Base;
+use ProjectBuilder::Version;
 
 # Inherit from the "Exporter" module which handles exporting functions.
  
+use vars qw($VERSION $REVISION @ISA @EXPORT);
 use Exporter;
  
 # Export, by default, all the functions into the namespace of
@@ -22,6 +24,7 @@ use Exporter;
  
 our @ISA = qw(Exporter);
 our @EXPORT = qw(pb_conf_init pb_conf_add pb_conf_read pb_conf_read_if pb_conf_get pb_conf_get_if);
+($VERSION,$REVISION) = pb_version_init();
 
 # Global hash of conf files
 # Key is the conf file name
@@ -94,6 +97,7 @@ foreach my $cf (@_) {
 	my $num = keys %pbconffiles;
 	pb_log(2,"DEBUG: pb_conf_add $cf at position $num\n");
 	$pbconffiles{$cf} = $num;
+	pb_log(0,"WARNING: pb_conf_add can not read $cf\n") if (! -r $cf);
 }
 }
 

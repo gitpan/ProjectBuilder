@@ -20,9 +20,11 @@ use Time::localtime qw(localtime);
 use Pod::Usage;
 use English;
 use POSIX qw(locale_h);
+use ProjectBuilder::Version;
 
 # Inherit from the "Exporter" module which handles exporting functions.
  
+use vars qw($VERSION $REVISION @ISA @EXPORT);
 use Exporter;
  
 # Export, by default, all the functions into the namespace of
@@ -36,7 +38,8 @@ our $pbdisplaytype = "text";
 our $pblocale = "C";
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(pb_mkdir_p pb_system pb_rm_rf pb_get_date pb_log pb_log_init pb_get_uri pb_get_content pb_set_content pb_display_file pb_syntax_init pb_syntax pb_temp_init pb_get_arch pb_check_requirements $pbdebug $pbLOG $pbdisplaytype $pblocale);
+our @EXPORT = qw(pb_mkdir_p pb_system pb_rm_rf pb_get_date pb_log pb_log_init pb_get_uri pb_get_content pb_set_content pb_display_file pb_syntax_init pb_syntax pb_temp_init pb_get_arch pb_check_requirements pb_check_req $pbdebug $pbLOG $pbdisplaytype $pblocale);
+($VERSION,$REVISION) = pb_version_init();
 
 =pod
 
@@ -70,7 +73,7 @@ This modules provides generic functions suitable for perl project development
   #
   # Analysis a URI and return its components in a table
   #
-  my ($scheme, $account, $host, $port, $path) = pb_get_uri("svn+ssh://ac@my.server.org/path/to/dir");
+  my ($scheme, $account, $host, $port, $path) = pb_get_uri("svn+ssh://ac@my.server.org:port/path/to/dir");
 
   #
   # Gives the current date in a table
@@ -86,7 +89,7 @@ This modules provides generic functions suitable for perl project development
   #
   # Manages content of a file
   #
-  pb_display_file("/etc/passwd");
+  pb_display_file("/etc/passwd",\*STDERR);
   my $cnt = pb_get_content("/etc/passwd");
 
 =head1 USAGE
@@ -145,8 +148,8 @@ my $redir = "";
 
 pb_log(0,"$cmt... ") if ((! defined $verbose) || ($verbose ne "quiet"));
 pb_log(1,"Executing $cmd\n");
-unlink("$ENV{'PBTMP'}/system.log") if (-f "$ENV{'PBTMP'}/system.log");
-$redir = "2>> $ENV{'PBTMP'}/system.log 1>> $ENV{'PBTMP'}/system.log" if ((! defined $verbose) || ($verbose ne "noredir"));
+unlink("$ENV{'PBTMP'}/system.$$.log") if (-f "$ENV{'PBTMP'}/system.$$.log");
+$redir = "2>> $ENV{'PBTMP'}/system.$$.log 1>> $ENV{'PBTMP'}/system.$$.log" if ((! defined $verbose) || ($verbose ne "noredir"));
 system("$cmd $redir");
 my $res = $?;
 # Exit now if the command may fail
@@ -157,16 +160,16 @@ if ((defined $verbose) and ($verbose eq "mayfail")) {
 	}
 if ($res == -1) {
 	pb_log(0,"failed to execute ($cmd): $!\n") if ((! defined $verbose) || ($verbose ne "quiet"));
-	pb_display_file("$ENV{'PBTMP'}/system.log") if ((-f "$ENV{'PBTMP'}/system.log") and ((! defined $verbose) || ($verbose ne "quiet")));
+	pb_display_file("$ENV{'PBTMP'}/system.$$.log") if ((-f "$ENV{'PBTMP'}/system.$$.log") and ((! defined $verbose) || ($verbose ne "quiet")));
 } elsif ($res & 127) {
 	pb_log(0, "child ($cmd) died with signal ".($? & 127).", ".($? & 128) ? 'with' : 'without'." coredump\n") if ((! defined $verbose) || ($verbose ne "quiet"));
-	pb_display_file("$ENV{'PBTMP'}/system.log") if ((-f "$ENV{'PBTMP'}/system.log") and ((! defined $verbose) || ($verbose ne "quiet")));
+	pb_display_file("$ENV{'PBTMP'}/system.$$.log") if ((-f "$ENV{'PBTMP'}/system.$$.log") and ((! defined $verbose) || ($verbose ne "quiet")));
 } elsif ($res == 0) {
 	pb_log(0,"OK\n") if ((! defined $verbose) || ($verbose ne "quiet"));
-	pb_display_file("$ENV{'PBTMP'}/system.log") if ((defined $verbose) and (-f "$ENV{'PBTMP'}/system.log") and ($verbose ne "quiet"));
+	pb_display_file("$ENV{'PBTMP'}/system.$$.log") if ((defined $verbose) and (-f "$ENV{'PBTMP'}/system.$$.log") and ($verbose ne "quiet"));
 } else {
 	pb_log(0, "child ($cmd) exited with value ".($? >> 8)."\n") if ((! defined $verbose) || ($verbose ne "quiet"));
-	pb_display_file("$ENV{'PBTMP'}/system.log") if ((-f "$ENV{'PBTMP'}/system.log") and ((! defined $verbose) || ($verbose ne "quiet")));
+	pb_display_file("$ENV{'PBTMP'}/system.$$.log") if ((-f "$ENV{'PBTMP'}/system.$$.log") and ((! defined $verbose) || ($verbose ne "quiet")));
 }
 return($res);
 }
@@ -195,7 +198,12 @@ $authority = "" if (not defined $authority);
 $path = "" if (not defined $path);
 $account = "" if (not defined $account);
 $host = "" if (not defined $host);
-$port = "" if (not defined $port);
+if (not defined $port) {
+	$port = "" 
+} else {
+	# Remove extra : at start
+	$port =~ s/^://;
+}
 
 pb_log(2,"DEBUG: scheme:$scheme ac:$account host:$host port:$port path:$path\n");
 return($scheme, $account, $host, $port, $path);
@@ -259,12 +267,14 @@ my $dlevel = shift;
 my $msg = shift;
 
 print $pbLOG "$msg" if ($dlevel <= $pbdebug);
+print "$msg" if (($dlevel == 0) && ($pbLOG != \*STDOUT));
 }
 
 
 =item B<pb_display_file>
 
 This function print the content of the file passed in parameter.
+If a second parameter is given, this is the descriptor of the logfile to write to in addtion to STDOUT.
 
 This is a cat equivalent function.
 
@@ -273,9 +283,12 @@ This is a cat equivalent function.
 sub pb_display_file {
 
 my $file=shift;
+my $desc=shift || undef;
 
 return if (not -f $file);
-printf "%s\n",pb_get_content($file);
+my $cnt = pb_get_content($file);
+print "$cnt\n";
+print $desc "$cnt\n" if (defined $desc);
 }
 
 =item B<pb_get_content>
@@ -301,7 +314,7 @@ return($content);
 
 =item B<pb_set_content>
 
-This function put the content of a file into the file passed in parameter.
+This function put the content of a variable passed as second parameter into the file passed as first parameter.
 
 =cut
 
@@ -391,39 +404,60 @@ return($arch);
 =item B<pb_check_requirements>
 
 This function checks that the commands needed for the subsystem are indeed present. 
-The required comands are passed as a coma separated string as first parameter.
-The optional comands are passed as a coma separated string as second parameter.
+The required commands are passed as a coma separated string as first parameter.
+The optional commands are passed as a coma separated string as second parameter.
 
 =cut
 
 sub pb_check_requirements {
 
-my $cmds = shift || "";
-my $options = shift || "";
+my $req = shift || undef;
+my $opt = shift || undef;
+my $appname = shift || undef;
+
+my ($req2,$opt2) = (undef,undef);
+$req2 = $req->{$appname} if (defined $req and defined $appname);
+$opt2 = $opt->{$appname} if (defined $opt and defined $appname);
 
 # cmds is a string of coma separated commands
-foreach my $file (split(/,/,$cmds)) {
-	pb_check_req($file,0);
+if (defined $req2) {
+	foreach my $file (split(/,/,$req2)) {
+		pb_check_req($file,0);
+	}
 }
 
 # opts is a string of coma separated commands
-foreach my $file (split(/,/,$options)) {
-	pb_check_req($file,1);
+if (defined $opt2) {
+	foreach my $file (split(/,/,$opt2)) {
+		pb_check_req($file,1);
+	}
 }
 }
+
+=item B<pb_check_req>
+
+This function checks existence of a command and return its full pathname.
+The command name is passed as first parameter.
+The second parameter should be 0 if the command is mandatory, 1 if optional.
+
+=cut
 
 sub pb_check_req {
 
 my $file = shift;
 my $opt = shift || 1;
-my $found = 0;
+my $found = undef;
 
 pb_log(2,"Checking availability of $file...");
 # Check for all dirs in the PATH
 foreach my $p (split(/:/,$ENV{'PATH'})) {
-	$found = 1 if (-x "$p/$file");
+	if (-x "$p/$file") {
+		$found =  "$p/$file";
+		last;
+	}
 }
-if ($found eq 0) {
+
+if (not $found) {
 	pb_log(2,"KO\n");
 	if ($opt eq 1) {
 		pb_log(2,"Unable to find optional command $file\n");
@@ -432,6 +466,7 @@ if ($found eq 0) {
 	}
 } else {
 	pb_log(2,"OK\n");
+	return($found);
 }
 }
 

@@ -18,9 +18,11 @@ use Pod::Usage;
 use English;
 use POSIX qw(locale_h);
 use ProjectBuilder::Base;
+use ProjectBuilder::Version;
 
 # Inherit from the "Exporter" module which handles exporting functions.
  
+use vars qw($VERSION $REVISION @ISA @EXPORT);
 use Exporter;
  
 # Export, by default, all the functions into the namespace of
@@ -32,6 +34,7 @@ our $pblocale = "C";
 
 our @ISA = qw(Exporter);
 our @EXPORT = qw(pb_display pb_display_init $pbdisplaytype $pblocale);
+($VERSION,$REVISION) = pb_version_init();
 
 =pod
 
