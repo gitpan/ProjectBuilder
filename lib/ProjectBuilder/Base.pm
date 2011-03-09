@@ -107,7 +107,7 @@ Based on File::Path mkpath.
 sub pb_mkdir_p {
 my @dir = @_;
 my $ret = mkpath(@dir, 0, 0755);
-return($ret);
+return(0);
 }
 
 =item B<pb_rm_rf>

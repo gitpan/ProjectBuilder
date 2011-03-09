@@ -25,7 +25,7 @@ use Exporter;
 # any code which uses this module.
  
 our @ISA = qw(Exporter);
-our @EXPORT = qw(pb_distro_conffile pb_distro_init pb_distro_get pb_distro_getlsb pb_distro_installdeps pb_distro_getdeps pb_distro_only_deps_needed pb_distro_setuprepo pb_distro_setuposrepo pb_distro_get_param);
+our @EXPORT = qw(pb_distro_conffile pb_distro_get pb_distro_getlsb pb_distro_installdeps pb_distro_getdeps pb_distro_only_deps_needed pb_distro_setuprepo pb_distro_setuposrepo pb_distro_get_param pb_distro_get_context);
 ($VERSION,$REVISION) = pb_version_init();
 
 =pod
@@ -45,19 +45,17 @@ This modules provides functions to allow detection of Linux distributions, and g
   # 
   # Return information on the running distro
   #
-  my ($ddir, $dver, $dfam, $dtype, $pbsuf, $dos, $pbupd, $pbins, $arch) = pb_distro_init();
-  print "distro tuple: ".Dumper($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd, $pbins, $arch)."\n";
+  my $pbos = pb_distro_get_context();
+  print "distro tuple: ".Dumper($pbos->name, $pbos->ver, $pbos->fam, $pbos->type, $pbos->pbsuf, $pbos->pbupd, $pbos->pbins, $pbos->arch)."\n";
   # 
   # Return information on the requested distro
   #
-  my ($ddir, $dver, $dfam, $dtype, $dos, $pbsuf, $pbupd, $pbins, $arch) = pb_distro_init("ubuntu","7.10","x86_64");
-  print "distro tuple: ".Dumper($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd, $pbins, $arch)."\n";
+  my $pbos = pb_distro_get_context("ubuntu-7.10-x86_64");
+  print "distro tuple: ".Dumper($pbos->name, $pbos->ver, $pbos->fam, $pbos->type, $pbos->pbsuf, $pbos->pbupd, $pbos->pbins, $pbos->arch)."\n";
   # 
   # Return information on the running distro
   #
   my ($ddir,$dver) = pb_distro_get();
-  my ($ddir, $dver, $dfam, $dtype, $dos, $pbsuf, $pbupd, $pbins, $arch) = pb_distro_init($ddir,$dver);
-  print "distro tuple: ".Dumper($ddir, $dver, $dfam, $dtype, $pbsuf, $pbupd, $pbins, $arch)."\n";
 
 =head1 USAGE
 
@@ -77,12 +75,12 @@ return("CCCC/pb.conf");
 
 =item B<pb_distro_init>
 
-This function returns a list of 8 parameters indicating the distribution name, version, family, type of build system, suffix of packages, update command line, installation command line and architecture of the underlying Linux distribution. The value of the 8 fields may be "unknown" in case the function was unable to recognize on which distribution it is running.
+This function returns a hash of parameters indicating the distribution name, version, family, type of build system, suffix of packages, update command line, installation command line and architecture of the underlying Linux distribution. The value of the fields may be "unknown" in case the function was unable to recognize on which distribution it is running.
 
 As an example, Ubuntu and Debian are in the same "du" family. As well as RedHat, RHEL, CentOS, fedora are on the same "rh" family.
-Mandriva, Open SuSE and Fedora have all the same "rpm" type of build system. Ubuntu ad Debian have the same "deb" type of build system. 
+Mandriva, Open SuSE and Fedora have all the same "rpm" type of build system. Ubuntu and Debian have the same "deb" type of build system. 
 And "fc" is the extension generated for all Fedora packages (Version will be added by pb).
-All these information are stored in an external configuration file typically at /etc/pb/pb.conf
+All this information is stored in an external configuration file typically at /etc/pb/pb.conf
 
 When passing the distribution name and version as parameters, the B<pb_distro_init> function returns the parameter of that distribution instead of the underlying one.
 
@@ -94,17 +92,22 @@ Ideas taken from http://search.cpan.org/~kerberus/Linux-Distribution-0.14/lib/Li
 
 sub pb_distro_init {
 
-my $ddir = shift || undef;
-my $dver = shift || undef;
-my $dfam = "unknown";
-my $dtype = "unknown";
-my $dos = "unknown";
-my $dsuf = "unknown";
-my $dupd = "unknown";
-my $dins = "unknown";
-my $darch = shift || undef;
-my $dnover = "false";
-my $drmdot = "false";
+my $pbos = {
+	'name' => undef,
+	'version' => undef,
+	'arch' => undef,
+	'family' => "unknown",
+	'suffix' => "unknown",
+	'update' => "unknown",
+	'install' => "unknown",
+	'type' => "unknown",
+	'os' => "unknown",
+	'nover' => "false",
+	'rmdot' => "false",
+	};
+$pbos->{'name'} = shift;
+$pbos->{'version'} = shift;
+$pbos->{'arch'} = shift;
 
 # Adds conf file for distribution description
 # the location of the conf file is finalyzed at install time
@@ -112,47 +115,43 @@ my $drmdot = "false";
 pb_conf_add(pb_distro_conffile());
 
 # If we don't know which distribution we're on, then guess it
-($ddir,$dver) = pb_distro_get() if ((not defined $ddir) || (not defined $dver));
+($pbos->{'name'},$pbos->{'version'}) = pb_distro_get() if ((not defined $pbos->{'name'}) || (not defined $pbos->{'version'}));
 
 # For some rare cases, typically nover ones
-$ddir = "unknown" if (not defined $ddir);
-$dver = "unknown" if (not defined $dver);
+$pbos->{'name'} = "unknown" if (not defined $pbos->{'name'});
+$pbos->{'version'} = "unknown" if (not defined $pbos->{'version'});
 
 # Initialize arch
-$darch=pb_get_arch() if (not defined $darch);
-
-my ($osfamily,$ostype,$osupd,$osins,$ossuffix,$osnover,$osremovedotinver,$os) = pb_conf_get("osfamily","ostype","osupd","osins","ossuffix","osnover","osremovedotinver","os");
+$pbos->{'arch'} = pb_get_arch() if (not defined $pbos->{'arch'});
 
 # Dig into the tuple to find the best answer
-$dfam = pb_distro_get_param($ddir,$dver,$darch,$osfamily);
-$dtype = pb_distro_get_param($ddir,$dver,$darch,$ostype,$dfam);
-$dos = pb_distro_get_param($ddir,$dver,$darch,$os,$dfam,$dtype);
-$dupd = pb_distro_get_param($ddir,$dver,$darch,$osupd,$dfam,$dtype,$dos);
-$dins = pb_distro_get_param($ddir,$dver,$darch,$osins,$dfam,$dtype,$dos);
-$dsuf = pb_distro_get_param($ddir,$dver,$darch,$ossuffix,$dfam,$dtype,$dos);
-$dnover = pb_distro_get_param($ddir,$dver,$darch,$osnover,$dfam,$dtype,$dos);
-$drmdot = pb_distro_get_param($ddir,$dver,$darch,$osremovedotinver,$dfam,$dtype,$dos);
+# Do NOT factorize here, as it won't work as of now for hash creation
+$pbos->{'family'} = pb_distro_get_param($pbos,pb_conf_get("osfamily"));
+$pbos->{'type'} = pb_distro_get_param($pbos,pb_conf_get("ostype"));
+($pbos->{'os'},$pbos->{'install'},$pbos->{'suffix'},$pbos->{'nover'},$pbos->{'rmdot'},$pbos->{'update'}) = pb_distro_get_param($pbos,pb_conf_get("os","osins","ossuffix","osnover","osremovedotinver","osupd"));
+#($pbos->{'family'},$pbos->{'type'},$pbos->{'os'},$pbos->{'install'},$pbos->{'suffix'},$pbos->{'nover'},$pbos->{'rmdot'},$pbos->{'update'}) = pb_distro_get_param($pbos,pb_conf_get("osfamily","ostype","os","osins","ossuffix","osnover","osremovedotinver","osupd"));
 
 # Some OS have no interesting version
-$dver = "nover" if ($dnover eq "true");
+$pbos->{'version'} = "nover" if ((defined $pbos->{'nover'}) && ($pbos->{'nover'} eq "true"));
 
-# For some OS remove the . in version name
-$dver =~ s/\.//g if ($drmdot eq "true");
+# For some OS remove the . in version name for extension
+my $dver2 = $pbos->{'version'};
+$dver2 =~ s/\.//g if ((defined $pbos->{'rmdot'}) && ($pbos->{'rmdot'} eq "true"));
 
-if ((not defined $dsuf) || ($dsuf eq "")) {
-	# By default suffix is a concatenation of .ddir and dver
-	$dsuf = ".$ddir$dver" 
+if ((not defined $pbos->{'suffix'}) || ($pbos->{'suffix'} eq "")) {
+	# By default suffix is a concatenation of name and version
+	$pbos->{'suffix'} = ".$pbos->{'name'}$dver2" 
 } else {
 	# concat just the version to what has been found
-	$dsuf = ".$dsuf$dver";
+	$pbos->{'suffix'} = ".$pbos->{'suffix'}$dver2";
 }
 
 #	if ($arch eq "x86_64") {
 #	$opt="--exclude=*.i?86";
 #	}
-pb_log(2,"DEBUG: pb_distro_init: $ddir, $dver, $dfam, $dtype, $dsuf, $dupd, $dins, $darch\n");
+pb_log(2,"DEBUG: pb_distro_init: ".Dumper($pbos)."\n");
 
-return($ddir, $dver, $dfam, $dtype, $dos, $dsuf, $dupd, $dins, $darch);
+return($pbos);
 }
 
 =item B<pb_distro_get>
@@ -274,11 +273,12 @@ if (-r $lsbf) {
 		$l = $f if ($f =~ /^LSB_VERSION/);
 		$l =~ s/LSB_VERSION=/LSB Version:\t/;
 	}
-	$c =~ s/^[A-z ]*:[\t ]*// if (defined $s);
-	$r =~ s/^[A-z ]*:[\t ]*// if (defined $s);
-	$d =~ s/^[A-z ]*:[\t ]*// if (defined $s);
-	$i =~ s/^[A-z ]*:[\t ]*// if (defined $s);
-	$l =~ s/^[A-z ]*:[\t ]*// if (defined $s);
+	my $regexp = "^[A-z ]*:[\t ]*";
+	$c =~ s/$regexp// if (defined $s);
+	$r =~ s/$regexp// if (defined $s);
+	$d =~ s/$regexp// if (defined $s);
+	$i =~ s/$regexp// if (defined $s);
+	$l =~ s/$regexp// if (defined $s);
 	return($l, $i, $d, $r, $c);
 } else {
 	print STDERR "Unable to read $lsbf file\n";
@@ -288,8 +288,8 @@ if (-r $lsbf) {
 
 =item B<pb_distro_installdeps>
 
-This function install the dependencies required to build the package on an RPM based distro
-dependencies can be passed as a parameter in which case they are not computed
+This function install the dependencies required to build the package on a distro.
+Dependencies can be passed as a parameter in which case they are not computed
 
 =cut
 
@@ -297,20 +297,19 @@ sub pb_distro_installdeps {
 
 # SPEC file
 my $f = shift || undef;
-my $dtype = shift || undef;
-my $dupd = shift || undef;
+my $pbos = shift;
 my $deps = shift || undef;
 
 # Protection
-return if (not defined $dupd);
+return if (not defined $pbos->{'install'});
 
-# Get dependecies in the build file if not forced
-$deps = pb_distro_getdeps($f, $dtype) if (not defined $deps);
+# Get dependencies in the build file if not forced
+$deps = pb_distro_getdeps($f, $pbos) if (not defined $deps);
 pb_log(2,"deps: $deps\n");
 return if ((not defined $deps) || ($deps =~ /^\s*$/));
 if ($deps !~ /^[ 	]*$/) {
 	# This may not be // proof. We should test for availability of repo and sleep if not
-	pb_system("$dupd $deps","Installing dependencies ($deps)");
+	pb_system("$pbos->{'install'} $deps","Installing dependencies ($deps)");
 	}
 }
 
@@ -323,23 +322,23 @@ This function computes the dependencies indicated in the build file and return t
 sub pb_distro_getdeps {
 
 my $f = shift || undef;
-my $dtype = shift || undef;
+my $pbos = shift;
 
 my $regexp = "";
 my $deps = "";
 my $sep = $/;
 
 # Protection
-return("") if (not defined $dtype);
+return("") if (not defined $pbos->{'type'});
 return("") if (not defined $f);
 
-pb_log(3,"entering pb_distro_getdeps: $dtype - $f\n");
-if ($dtype eq  "rpm") {
+pb_log(3,"entering pb_distro_getdeps: $pbos->{'type'} - $f\n");
+if ($pbos->{'type'} eq  "rpm") {
 	# In RPM this could include files, but we do not handle them atm.
 	$regexp = '^BuildRequires:(.*)$';
-} elsif ($dtype eq "deb") {
+} elsif ($pbos->{'type'} eq "deb") {
 	$regexp = '^Build-Depends:(.*)$';
-} elsif ($dtype eq "ebuild") {
+} elsif ($pbos->{'type'} eq "ebuild") {
 	$sep = '"'.$/;
 	$regexp = '^DEPEND="(.*)"\n'
 } else {
@@ -375,7 +374,7 @@ while (<DESC>) {
 close(DESC);
 $/ = $oldsep;
 pb_log(2,"now deps: $deps\n");
-my $deps2 = pb_distro_only_deps_needed($dtype,$deps);
+my $deps2 = pb_distro_only_deps_needed($pbos,$deps);
 return($deps2);
 }
 
@@ -388,20 +387,20 @@ This function returns only the dependencies not yet installed
 
 sub pb_distro_only_deps_needed {
 
-my $dtype = shift || undef;
+my $pbos = shift;
 my $deps = shift || undef;
 
 return("") if ((not defined $deps) || ($deps =~ /^\s*$/));
 my $deps2 = "";
 # Avoid to install what is already there
 foreach my $p (split(/ /,$deps)) {
-	if ($dtype eq  "rpm") {
+	if ($pbos->{'type'} eq  "rpm") {
 		my $res = pb_system("rpm -q --whatprovides --quiet $p","","quiet");
 		next if ($res eq 0);
-	} elsif ($dtype eq "deb") {
+	} elsif ($pbos->{'type'} eq "deb") {
 		my $res = pb_system("dpkg -L $p","","quiet");
 		next if ($res eq 0);
-	} elsif ($dtype eq "ebuild") {
+	} elsif ($pbos->{'type'} eq "ebuild") {
 	} else {
 		# Not reached
 	}
@@ -422,14 +421,9 @@ This function sets up potential additional repository for the setup phase
 
 sub pb_distro_setuposrepo {
 
-my $ddir = shift || undef;
-my $dver = shift;
-my $darch = shift;
-my $dtype = shift || undef;
-my $dfam = shift || undef;
-my $dos = shift || undef;
+my $pbos = shift;
 
-pb_distro_setuprepo_gen($ddir,$dver,$darch,$dtype,$dfam,$dos,pb_distro_conffile(),"osrepo");
+pb_distro_setuprepo_gen($pbos,pb_distro_conffile(),"osrepo");
 }
 
 =item B<pb_distro_setuprepo>
@@ -440,14 +434,9 @@ This function sets up potential additional repository to the build environment
 
 sub pb_distro_setuprepo {
 
-my $ddir = shift || undef;
-my $dver = shift;
-my $darch = shift;
-my $dtype = shift || undef;
-my $dfam = shift || undef;
-my $dos = shift || undef;
+my $pbos = shift;
 
-pb_distro_setuprepo_gen($ddir,$dver,$darch,$dtype,$dfam,$dos,"$ENV{'PBDESTDIR'}/pbrc","addrepo");
+pb_distro_setuprepo_gen($pbos,"$ENV{'PBDESTDIR'}/pbrc","addrepo");
 }
 
 =item B<pb_distro_setuprepo_gen>
@@ -458,12 +447,7 @@ This function sets up in a generic way potential additional repository
 
 sub pb_distro_setuprepo_gen {
 
-my $ddir = shift || undef;
-my $dver = shift;
-my $darch = shift;
-my $dtype = shift || undef;
-my $dfam = shift || undef;
-my $dos = shift || undef;
+my $pbos = shift;
 my $pbconf = shift || undef;
 my $pbkey = shift || undef;
 
@@ -472,7 +456,7 @@ return if (not defined $pbkey);
 my ($addrepo) = pb_conf_read($pbconf,$pbkey);
 return if (not defined $addrepo);
 
-my $param = pb_distro_get_param($ddir,$dver,$darch,$addrepo,$dfam,$dtype,$dos);
+my $param = pb_distro_get_param($pbos,$addrepo);
 return if ($param eq "");
 
 # Loop on the list of additional repo
@@ -489,7 +473,7 @@ foreach my $i (split(/,/,$param)) {
 	}
 
 	# The repo file can be a real file or a package
-	if ($dtype eq "rpm") {
+	if ($pbos->{'type'} eq "rpm") {
 		if ($bn =~ /\.rpm$/) {
 			my $pn = $bn;
 			$pn =~ s/\.rpm//;
@@ -506,7 +490,7 @@ foreach my $i (split(/,/,$param)) {
 		} else {
 			pb_log(0,"Unable to deal with repository file $i on rpm distro ! Please report to dev team\n");
 		}
-	} elsif ($dtype eq "deb") {
+	} elsif ($pbos->{'type'} eq "deb") {
 		if (($bn =~ /\.sources.list$/) && (not -f "/etc/apt/sources.list.d/$bn")) {
 			pb_system("sudo mv $ENV{'PBTMP'}/$bn /etc/apt/sources.list.d","Adding apt repository");
 			pb_system("sudo apt-get update","Updating apt repository");
@@ -528,46 +512,72 @@ This function gets the parameter in the conf file from the most precise tuple up
 
 sub pb_distro_get_param {
 
-my $param = "";
-my $ddir = shift;
-my $dver = shift;
-my $darch = shift;
-my $opt = shift;
-my $dfam = shift || "unknown";
-my $dtype = shift || "unknown";
-my $dos = shift || "unknown";
+my @param;
+my $param;
+my $pbos = shift;
 
-pb_log(2,"DEBUG: pb_distro_get_param on $ddir-$dver-$darch for ".Dumper($opt)."\n");
-if (defined $opt->{"$ddir-$dver-$darch"}) {
-	$param = $opt->{"$ddir-$dver-$darch"};
-} elsif (defined $opt->{"$ddir-$dver"}) {
-	$param = $opt->{"$ddir-$dver"};
-} elsif (defined $opt->{"$ddir"}) {
-	$param = $opt->{"$ddir"};
-} elsif (defined $opt->{$dfam}) {
-	$param = $opt->{$dfam};
-} elsif (defined $opt->{$dtype}) {
-	$param = $opt->{$dtype};
-} elsif (defined $opt->{$dos}) {
-	$param = $opt->{$dos};
-} elsif (defined $opt->{"default"}) {
-	$param = $opt->{"default"};
+pb_log(2,"DEBUG: pb_distro_get_param on $pbos->{'name'}-$pbos->{'version'}-$pbos->{'arch'} for ".Dumper(@_)."\n");
+foreach my $opt (@_) {
+	if (defined $opt->{"$pbos->{'name'}-$pbos->{'version'}-$pbos->{'arch'}"}) {
+		$param = $opt->{"$pbos->{'name'}-$pbos->{'version'}-$pbos->{'arch'}"};
+	} elsif (defined $opt->{"$pbos->{'name'}-$pbos->{'version'}"}) {
+		$param = $opt->{"$pbos->{'name'}-$pbos->{'version'}"};
+	} elsif (defined $opt->{"$pbos->{'name'}"}) {
+		$param = $opt->{"$pbos->{'name'}"};
+	} elsif (defined $opt->{$pbos->{'family'}}) {
+		$param = $opt->{$pbos->{'family'}};
+	} elsif (defined $opt->{$pbos->{'type'}}) {
+		$param = $opt->{$pbos->{'type'}};
+	} elsif (defined $opt->{$pbos->{'os'}}) {
+		$param = $opt->{$pbos->{'os'}};
+	} elsif (defined $opt->{"default"}) {
+		$param = $opt->{"default"};
+	} else {
+		$param = "";
+	}
+
+	# Allow replacement of variables inside the parameter such as name, version, arch for rpmbootstrap 
+	# but not shell variable which are backslashed
+	if ($param =~ /[^\\]\$/) {
+		pb_log(3,"Expanding variable on $param\n");
+		eval { $param =~ s/(\$\w+->{\'\w+\'})/$1/eeg };
+	}
+	push @param,$param;
+}
+
+pb_log(2,"DEBUG: pb_distro_get_param on $pbos->{'name'}-$pbos->{'version'}-$pbos->{'arch'} returns ==".Dumper(@param)."==\n");
+
+# Return one param in scalar context, an array if not.
+my $nb = @param;
+if ($nb eq 1) {
+	return($param);
 } else {
-	$param = "";
+	return(@param);
+}
 }
 
-# Allow replacement of variables inside the parameter such as ddir, dver, darch for rpmbootstrap 
-# but not shell variable which are backslashed
-if ($param =~ /[^\\]\$/) {
-	pb_log(3,"Expanding variable on $param\n");
-	eval { $param =~ s/(\$\w+)/$1/eeg };
+=item B<pb_distro_get_context>
+
+This function gets the OS context passed as parameter and return the corresponding distribution hash
+
+=cut
+
+
+sub pb_distro_get_context {
+
+my $os = shift;
+my $pbos;
+
+if (defined $os) {
+	my ($name,$ver,$darch) = split(/-/,$os);
+	pb_log(0,"Bad format for $os") if ((not defined $name) || (not defined $ver) || (not defined $darch)) ;
+	chomp($darch);
+	$pbos = pb_distro_init($name,$ver,$darch);
+} else {
+	$pbos = pb_distro_init();
 }
-
-pb_log(2,"DEBUG: pb_distro_get_param on $ddir-$dver-$darch returns ==$param==\n");
-return($param);
-
+return($pbos);
 }
-
 
 =back 
 

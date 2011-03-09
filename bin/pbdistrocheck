@@ -117,10 +117,7 @@ if (defined $opts{'v'}) {
 pb_log_init($pbdebug, \*STDOUT);
 
 my $dist = shift @ARGV || undef ;
-my @param = undef;
-@param = split(/-/,$dist) if (defined $dist);
-
-my ($ddir, $dver, $dfam, $dtype, $dos, $pbsuf, $pbupd, $pbins, $arch) = pb_distro_init(@param);
+my $pbos = pb_distro_get_context($dist);
 my $sep = "\n";
 if (defined $opts{'l'}) {
 	# Simulate lsb_release output
@@ -136,16 +133,16 @@ if (defined $opts{'l'}) {
 } else {
 	$sep = "," if (defined $opts{'s'});
 	if (not defined $opts{'s'}) {
-		$dos = "OS:\t$dos";
-		$ddir = "Name:\t$ddir";
-		$dver = "Ver:\t$dver";
-		$dfam = "Family:\t$dfam";
-		$dtype = "Type:\t$dtype";
-		$pbsuf = "Suffix:\t$pbsuf";
-		$pbupd = "Update:\t$pbupd";
-		$pbins = "Install:\t$pbins";
-		$arch = "Arch:\t$arch";
+		$pbos->{'os'} = "OS:\t$pbos->{'os'}";
+		$pbos->{'name'} = "Name:\t$pbos->{'name'}";
+		$pbos->{'version'} = "Ver:\t$pbos->{'version'}";
+		$pbos->{'family'} = "Family:\t$pbos->{'family'}";
+		$pbos->{'type'} = "Type:\t$pbos->{'type'}";
+		$pbos->{'suffix'} = "Suffix:\t$pbos->{'suffix'}";
+		$pbos->{'update'} = "Update:\t$pbos->{'update'}";
+		$pbos->{'install'} = "Install:\t$pbos->{'install'}";
+		$pbos->{'arch'} = "Arch:\t$pbos->{'arch'}";
 		print "Project-Builder tuple:\n";
 	}
-	print join($sep,($dos, $ddir, $dver, $arch, $dtype, $dfam, $pbsuf, $pbupd, $pbins))."\n";
+	print join($sep,($pbos->{'os'}, $pbos->{'name'}, $pbos->{'version'}, $pbos->{'arch'}, $pbos->{'type'}, $pbos->{'family'}, $pbos->{'suffix'}, $pbos->{'update'}, $pbos->{'install'}))."\n";
 }

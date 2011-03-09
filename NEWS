@@ -2,6 +2,22 @@
 
 PERL-PROJECTBUILDER CHANGES
 
+0.11.1 (2011-02-26)
+- Document [web]sshdir|port|login|host (Bruno Cornec)
+- tmout param is optional and now handled and documented as such (Bruno Cornec)
+- rmntpcmd, vmhost, vmmem, vmntpcmd and vmsize have OS keys and not project keys. Fixed in doc and code.  (Bruno Cornec)
+- Mageia distributions are now working wirh pb (Bruno Cornec)
+- pb_mkdir_p doesn't return anything anymore. Test of return removed. (Bruno Cornec)
+- Add debian 6.0 build support and VMs (Bruno Cornec)
+- use --no-suggests for urpmi to allow for minimal chroot build (Bruno Cornec)
+- Add full path names on sudo  (Bruno Cornec)
+- Fix pb_changelog with test for correct pb hash values which were changed previously (Bruno Cornec)
+- Detail security aspects in pb, especially for RM setup with sudo (to be improved) in file SECURITY in pb-doc (Bruno Cornec)
+- Adds codenames for Debian 6.0 and Ubuntu 11.04 (Bruno Cornec)
+- Introduction of a new hash $pbos to manage all os related info through a single data structure. All functions reviewed accordingly. Externally transparent, hopefully, but much cleaner code as a consequence. (Bruno Cornec)
+- Adds support for Remote Machines (RM). (Bruno Cornec)
+- removedot only applies to the extension generated not to the rest of the distro ver (so filters have the right name, ...) (Bruno Cornec)
+
 0.10.1 (2011-01-13)
 - Prepare HP-UX port (Bruno Cornec)
 - redhat distros extension set by default to rh (Bruno Cornec)

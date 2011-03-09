@@ -142,6 +142,14 @@ Each value is detailed below giving the nature of its use (Mandatory or Optional
  Conffile: pb
  Example: osnover gentoo = true
 
+=item B<ospathcmd-*>
+
+ Nature: Optional
+ Key: OS (could be from the most generic up to the most specific from ostype, osfamily, os, os-ver, os-ver-arch).
+ Value: Full path name of the command mentioned after the '-' for the relative OS
+ Conffile: pb
+ Example: ospathcmd-halt solaris = /usr/sbin/halt, ospathcmd-halt default = /sbin/halt
+
 =item B<osperldep>
 
  Nature: Optional
@@ -398,6 +406,118 @@ osrelexpr rhel = Red Hat (?:Enterprise Linux|Linux Advanced Server) .*release ([
  Conffile: ve
  Example: rbspi centos = /home/rinse/bin/post-install.sh
 
+=item B<rmhost>
+
+ Nature: Mandatory
+ Key: OS (could be from the most generic up to the most specific from ostype, osfamily, os, os-ver, os-ver-arch). The family name is generaly used here.
+ Value: IP address or name of the Remote Machine running the OS mentioned in the key, accessed through ssh.
+ Conffile: rm
+ Example: rmhost default = localhost - rmhost hpux-11.3-ia64 = 10.10.10.10 - rmhost mandriva-2010.2-x86_64 = machine1.domain.name
+
+=item B<rmlist>
+
+ Nature: Mandatory
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: list of coma separated OS (under the form of os-ver-arch). The corresponding machines running these distributions are given in the rmpool parameter.
+ Conffile: rm
+ Example: rmlist default = mandriva-2010.2-i386,fedora-14-i386,rhel-6-i386,rhel-5-i386,pensuse-11.3-i386,sles-11-i386,gentoo-nover-i386,debian-5.0-i386,ubuntu-10.10-i386,solaris-10-i386,mandriva-2010.2-x86_64,fedora-14-x86_64,rhel-6-x86_64,rhel-5-x86_64,opensuse-11.3-x86_64,sles-11-x86_64,gentoo-nover-x86_64,debian-5.0-x86_64,ubuntu-10.10-x86_64,solaris-10-x86_64,hp-ux-11.3-ia64,rhel-5-ia64
+
+=item B<rmlogin>
+
+ Nature: Mandatory
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: account name to use on the Remote Machine to build packages. Communication is done with ssh.
+ Conffile: rm
+ Example: rmlogin default = pb
+
+=item B<rmmonport>
+
+ Nature: Optional
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: TCP port that is used to dialog with the monitor of the Remote Machine, to pass orders.
+ Conffile: rm
+ Example: rmmonport default = 4444
+
+=item B<rmntp>
+
+ Nature: Optional
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: NTP server to contact for time accuracy with B<rmntpcmd> before building.
+ Conffile: rm
+ Example: rmntp default = 1.pool.ntp.org
+
+=item B<rmntpcmd>
+
+ Nature: Mandatory
+ Key: OS (could be from the most generic up to the most specific from ostype, osfamily, os, os-ver, os-ver-arch).
+ Value: NTP command to use to perform time synchronization with the B<rmntp> server. Use full path name, as this command will be used in the sudoers file to allow its launch by root.
+ Conffile: rm
+ Example: rmntpcmd default = /usr/sbin/ntpdate,rmntpcmd opensuse-10.1-i386 = /usr/sbin/sntp -P no -r
+
+=item B<rmpath>
+
+ Nature: Mandatory
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: path where to find configuration file for Remote Machines management.
+ Conffile: rm
+ Example: rmpath default = /home/remote
+
+=item B<rmport>
+
+ Nature: Mandatory
+ Key: OS (could be from the most generic up to the most specific from ostype, osfamily, os, os-ver, os-ver-arch).
+ Value: port number to use to communicate with the RM using the SSH protocol. This localport is redirected to the port 22 of the RM.
+ Conffile: rm
+ Example: rmport pb = 2222,rmport mondorescue = 2223
+
+=item B<rmtmout>
+
+ Nature: Optional
+ Key: OS (could be from the most generic up to the most specific from ostype, osfamily, os, os-ver, os-ver-arch). The family name is generaly used here.
+ Value: Time in seconds to wait before interacting with the RM. This may correspond to the time the RM takes to boot.
+ Conffile: rm
+ Example: rmtmout default = 10
+
+=item B<rmtype>
+
+ Nature: Mandatory
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: ssh. For the moment, only ssh is supported as a communication means with RM.
+ Conffile: rm
+ Example: rmrtype default = ssh
+
+=item B<sshdir>
+
+ Nature: Mandatory
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: dirname into which packages are uploaded on the B<sshhost> machine.
+ Conffile: project
+ Example: sshdir mondorescue = /pub/mondorescue
+
+=item B<sshhost>
+
+ Nature: Mandatory
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: hostname to connect to in order to deliver packages to the repository server.
+ Conffile: project
+ Example: sshhost mondorescue = ftp.mondorescue.org
+
+=item B<sshlogin>
+
+ Nature: Mandatory
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: login to use when connecting to the repository server B<sshhost> for package delivery.
+ Conffile: project
+ Example: sshlogin mondorescue = mylogin
+
+=item B<sshport>
+
+ Nature: Mandatory
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: port to use when connecting to the repository server B<sshhost> for package delivery.
+ Conffile: project
+ Example: sshport mondorescue = 22
+
 =item B<supfiles>
 
 Not used yet.
@@ -444,9 +564,9 @@ Not used yet.
 
 =item B<ventpcmd>
 
- Nature: Optional
+ Nature: Mandatory
  Key: project (as defined in the -p option or PBPROJ environment variable)
- Value: NTP command to use to perform time synchronization with the B<ventp> server.
+ Value: NTP command to use to perform time synchronization with the B<ventp> server. Use full path name, as this command will be used in the sudoers file to allow its launch by root.
  Conffile: ve
  Example: ventpcmd default = /usr/sbin/ntpdate
 
@@ -464,7 +584,7 @@ Not used yet.
  Key: project (as defined in the -p option or PBPROJ environment variable)
  Value: true|false. True means that the VE should be rebuild before usage.
  Conffile: ve
- Example: ventpcmd default = /usr/sbin/ntpdate
+ Example: verebuild default = true
 
 =item B<verpmtype>
 
@@ -506,11 +626,10 @@ Not used yet.
  Conffile: vm
  Example: vmcmd default = /usr/bin/kvm
 
-
 =item B<vmhost>
 
  Nature: Mandatory
- Key: project (as defined in the -p option or PBPROJ environment variable)
+ Key: OS (could be from the most generic up to the most specific from ostype, osfamily, os, os-ver, os-ver-arch).
  Value: hostname to connect to in order to reach the VM through ssh. Generally redirected from a port on localhost.
  Conffile: vm
  Example: vmhost default = localhost
@@ -534,7 +653,7 @@ Not used yet.
 =item B<vmmem>
 
  Nature: Optional
- Key: project (as defined in the -p option or PBPROJ environment variable)
+ Key: OS (could be from the most generic up to the most specific from ostype, osfamily, os, os-ver, os-ver-arch).
  Value: Memory size in MB to allocate to the VM.
  Conffile: vm
  Example: vmmem default = 512
@@ -557,11 +676,11 @@ Not used yet.
 
 =item B<vmntpcmd>
 
- Nature: Optional
- Key: project (as defined in the -p option or PBPROJ environment variable)
- Value: NTP command to use to perform time synchronization with the B<vmntp> server.
+ Nature: Mandatory
+ Key: OS (could be from the most generic up to the most specific from ostype, osfamily, os, os-ver, os-ver-arch).
+ Value: NTP command to use to perform time synchronization with the B<vmntp> server. Use full path name, as this command will be used in the sudoers file to allow its launch by root.
  Conffile: vm
- Example: vmntpcmd default = /usr/sbin/ntpdate,vmntpcmd opensuse-11.0-i386 = sntp -P no -r
+ Example: vmntpcmd default = /usr/sbin/ntpdate,vmntpcmd opensuse-11.0-i386 = /usr/sbin/sntp -P no -r
 
 =item B<vmopt>
 
@@ -590,7 +709,7 @@ Not used yet.
 =item B<vmsize>
 
  Nature: Mandatory
- Key: project (as defined in the -p option or PBPROJ environment variable)
+ Key: OS (could be from the most generic up to the most specific from ostype, osfamily, os, os-ver, os-ver-arch).
  Value: Size of the VM to create when using the newvm command of pb.
  Conffile: vm
  Example: vmsize default = 7G
@@ -626,6 +745,38 @@ Not used yet.
  Value: Target directory containing the web content in the project that should be delivered when using the sbx|cms2webssh|pkg command of pb.
  Conffile: project
  Example: webdir mondorescue = website
+
+=item B<websshdir>
+
+ Nature: Optional (when not using *2webssh commands)
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: dirname into which content is uploaded on the B<websshhost> machine.
+ Conffile: project
+ Example: websshdir mondorescue = /var/www/html
+
+=item B<websshhost>
+
+ Nature: Optional (when not using *2webssh commands)
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: hostname to connect to in order to deliver content to the Web server.
+ Conffile: project
+ Example: websshhost mondorescue = www.mondorescue.org
+
+=item B<websshlogin>
+
+ Nature: Optional (when not using *2webssh commands)
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: login to use when connecting to the Web server B<websshhost> for content delivery.
+ Conffile: project
+ Example: websshlogin mondorescue = mylogin
+
+=item B<websshport>
+
+ Nature: Optional (when not using *2webssh commands)
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: port to use when connecting to the Web server B<websshhost> for content delivery.
+ Conffile: project
+ Example: websshport mondorescue = 22
 
 =back
 
