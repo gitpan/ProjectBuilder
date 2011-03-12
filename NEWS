@@ -2,6 +2,14 @@
 
 PERL-PROJECTBUILDER CHANGES
 
+0.11.2 (2011-03-12)
+- Adds mdkonline as a dependency for Mandriva VE builds (at least afetr 2010.1) to have urpmi.update (Bruno Cornec)
+- Fix rpm repo installation for pb (missing arch) (Bruno Cornec)
+- Add support for sources.list pb repo installation for deb based distro. Fix for #81. (Bruno Cornec)
+- No repo provided for CentOS so file install. Fix for #81. (Bruno Cornec)
+- Some more fixes for full path commands with sudo (older rhel) (Bruno Cornec)
+- Fix sudo calls for sles/suse with full path (Bruno Cornec)
+
 0.11.1 (2011-02-26)
 - Document [web]sshdir|port|login|host (Bruno Cornec)
 - tmout param is optional and now handled and documented as such (Bruno Cornec)

@@ -7,7 +7,7 @@ use strict;
 WriteMakefile(
 	NAME         => 'ProjectBuilder',
 	DISTNAME     => 'ProjectBuilder',
-	VERSION      => '0.11.1',
+	VERSION      => '0.11.2',
 	INST_SCRIPT  => 'blib/bin',
 	INSTALLDIRS  => 'perl',
 	PREREQ_PM    => {

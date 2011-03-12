@@ -1,13 +1,27 @@
+2011-03-12  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1265] Creation of
+	  svn+ssh://svn.project-builder.org/prj/svn/pb///0.11.2 from
+	  svn+ssh://svn.project-builder.org/prj/svn/pb//devel
+
+2011-03-11  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1254] - Adds mdkonline as a dependency for Mandriva VE builds
+	  (at least afetr 2010.1) to have urpmi.update
+
+2011-03-09  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1245] - Fix rpm repo installation for pb (missing arch)
+	  - Add support for sources.list pb repo installation for deb based
+	  distro. Fix for #81.
+	* [r1244] - No repo provided for CentOS so file install. May fix
+	  #81.
+	* [r1243] - Announce of 0.11.1
+	  - Some more fixes for full path commands with sudo (older rhel)
+
 2011-02-27  Bruno Cornec <bruno@project-builder.org>
 
-	* [r1241] etc/pb.conf: - Backport suse/sles fix for sudo into
-	  0.11.1
-
-2011-02-26  Bruno Cornec <bruno@project-builder.org>
-
-	* [r1230] Creation of
-	  svn+ssh://svn.project-builder.org/prj/svn/pb///0.11.1 from
-	  svn+ssh://svn.project-builder.org/prj/svn/pb//devel
+	* [r1240] - Fix sudo calls for sles/suse with full path
 
 2011-02-24  Bruno Cornec <bruno@project-builder.org>
 
