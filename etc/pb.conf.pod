@@ -223,6 +223,14 @@ osrelexpr rhel = Red Hat (?:Enterprise Linux|Linux Advanced Server) .*release ([
  Conffile: pb
  Example: osrepo rpm = ftp://ftp.project-builder.org/$ddir/$dver/pb.repo
 
+=item B<ossha>
+
+ Nature: Optional (Mandatory if rpm type of package)
+ Key: OS (could be from the most generic up to the most specific from ostype, osfamily, os, os-ver, os-ver-arch).
+ Value: sha algorithm used br createrepo
+ Conffile: pb
+ Example: ossha fedora-10 = sha1
+
 =item B<ossuffix>
 
  Nature: Optional
@@ -293,6 +301,30 @@ osrelexpr rhel = Red Hat (?:Enterprise Linux|Linux Advanced Server) .*release ([
  Value: number of processes to execute in parallel. By default use the number of cores.
  Conffile: pb
  Example: pbparallel pb = 12
+
+=item B<pbpassfile>
+
+ Nature: Optional
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: File containing the GPG passphrase that is used to sign packages
+ Conffile: home
+ Example: pbpassfile pb = /users/me/secret/passfile
+
+=item B<pbpasspath>
+
+ Nature: Optional
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: The directory under which will be found your secret key file.
+ Conffile: home
+ Example: pbpasspath pb = /home/me/.gnupg
+
+=item B<pbpassphrase>
+
+ Nature: Optional
+ Key: project (as defined in the -p option or PBPROJ environment variable)
+ Value: The GPG passphrase that is used to sign packages. Putting it in your conf file has security implications.
+ Conffile: home
+ Example: pbpassphrase pb = TheSecretPassPhrase
 
 =item B<pbprojdir>
 

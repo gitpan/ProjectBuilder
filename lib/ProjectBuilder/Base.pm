@@ -130,7 +130,7 @@ Encapsulate the "system" call for better output and return value test
 Needs a $ENV{'PBTMP'} variable which is created by calling the pb_mktemp_init function
 Needs pb_log support, so pb_log_init should have benn called before.
 
-The first parameter is the shell command to call.
+The first parameter is the shell command to call. this commend should NOT use redirections.
 The second parameter is the message to print on screen. If none is given, then the command is printed.
 The third parameter print the result of the command after correct execution if value is verbose. If value is noredir, it avoids redirecting outputs (e.g. for vi).
 This function returns the result the return value of the system command.

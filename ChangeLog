@@ -1,8 +1,48 @@
-2011-03-12  Bruno Cornec <bruno@project-builder.org>
+2011-05-25  Bruno Cornec <bruno@project-builder.org>
 
-	* [r1265] Creation of
-	  svn+ssh://svn.project-builder.org/prj/svn/pb///0.11.2 from
+	* [r1305] Creation of
+	  svn+ssh://svn.project-builder.org/prj/svn/pb///0.11.3 from
 	  svn+ssh://svn.project-builder.org/prj/svn/pb//devel
+
+2011-04-16  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1299] - Working VVE for opensuse-11.4
+	  - some corresponding fixes for rpmbootstrap that would also need
+	  backward checks now
+
+2011-04-04  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1290] r4335@localhost: bruno | 2011-04-04 18:17:05 +0200
+	  - Remove useless list of man pages for (3) as it's automatically
+	  computed.
+
+2011-03-30  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1287]
+
+2011-03-28  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1284] - Arch Linux doesn't have a version. It's like gentoo
+
+2011-03-25  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1279] - Adds delivery of the public key to each repository
+	  ateach delivery
+	  - Fix debian repo build
+	  - Adds suport for .deb package signing
+
+2011-03-24  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1278] r4314@localhost: bruno | 2011-03-24 22:18:22 +0100
+	  - Adds RPM signature support and doc
+	* [r1277] r4302@localhost: bruno | 2011-03-18 17:48:34 +0100
+	  - Fix type in devbootstrap instead of debootstrap
+
+2011-03-22  Bruno Cornec <bruno@project-builder.org>
+
+	* [r1276] - Adds support for different sha algorithms for
+	  createrepo call, due to some distro with python 2.4 not
+	  supporting sha256.
 
 2011-03-11  Bruno Cornec <bruno@project-builder.org>
 

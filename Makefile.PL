@@ -7,7 +7,7 @@ use strict;
 WriteMakefile(
 	NAME         => 'ProjectBuilder',
 	DISTNAME     => 'ProjectBuilder',
-	VERSION      => '0.11.2',
+	VERSION      => '0.11.3',
 	INST_SCRIPT  => 'blib/bin',
 	INSTALLDIRS  => 'perl',
 	PREREQ_PM    => {
@@ -18,12 +18,12 @@ WriteMakefile(
 	AUTHOR        => 'Bruno Cornec <bruno#project-builder.org>',
 	EXE_FILES     => [ qw( bin/pbdistrocheck ) ],
 	MAN1PODS      => { 'bin/pbdistrocheck' => '$(INST_MAN1DIR)/pbdistrocheck.$(MAN1EXT)', },
-	MAN3PODS      => {	'lib/ProjectBuilder/Distribution.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Distribution.$(MAN3EXT)',
-						'lib/ProjectBuilder/Conf.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Conf.$(MAN3EXT)',
-						'lib/ProjectBuilder/Display.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Display.$(MAN3EXT)',
-						'lib/ProjectBuilder/Log.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Log.$(MAN3EXT)',
-						'lib/ProjectBuilder/Log/Item.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Log::Item.$(MAN3EXT)',
-						'lib/ProjectBuilder/Base.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Base.$(MAN3EXT)', },
+#	MAN3PODS      => {	'lib/ProjectBuilder/Distribution.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Distribution.$(MAN3EXT)',
+						#'lib/ProjectBuilder/Conf.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Conf.$(MAN3EXT)',
+						#'lib/ProjectBuilder/Display.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Display.$(MAN3EXT)',
+						#'lib/ProjectBuilder/Log.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Log.$(MAN3EXT)',
+						#'lib/ProjectBuilder/Log/Item.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Log::Item.$(MAN3EXT)',
+						#'lib/ProjectBuilder/Base.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Base.$(MAN3EXT)', },
 );
 
 package MY;
