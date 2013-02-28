@@ -1,3 +1,6 @@
+# (c) B.Cornec 2007-2012
+# Eric Anderson's changes are (c) Copyright 2012 Hewlett Packard
+# Provided under the GPL v2
 use 5.006001;
 use ExtUtils::MakeMaker;
 use strict;
@@ -7,7 +10,7 @@ use strict;
 WriteMakefile(
 	NAME         => 'ProjectBuilder',
 	DISTNAME     => 'ProjectBuilder',
-	VERSION      => '0.11.3',
+	VERSION      => '0.12.2',
 	INST_SCRIPT  => 'blib/bin',
 	INSTALLDIRS  => 'perl',
 	PREREQ_PM    => {
@@ -16,8 +19,11 @@ WriteMakefile(
 	},    # e.g., Module::Name => 1.1
 	#ABSTRACT_FROM => 'bin/pb',   # retrieve abstract from module
 	AUTHOR        => 'Bruno Cornec <bruno#project-builder.org>',
-	EXE_FILES     => [ qw( bin/pbdistrocheck ) ],
-	MAN1PODS      => { 'bin/pbdistrocheck' => '$(INST_MAN1DIR)/pbdistrocheck.$(MAN1EXT)', },
+	EXE_FILES     => [ qw(bin/pbdistrocheck bin/pbdistrogetparam) ],
+	MAN1PODS      => { 
+						'bin/pbdistrocheck' => '$(INST_MAN1DIR)/pbdistrocheck.$(MAN1EXT)', 
+						'bin/pbdistrogetparam' => '$(INST_MAN1DIR)/pbdistrogetparam.$(MAN1EXT)', 
+					},
 #	MAN3PODS      => {	'lib/ProjectBuilder/Distribution.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Distribution.$(MAN3EXT)',
 						#'lib/ProjectBuilder/Conf.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Conf.$(MAN3EXT)',
 						#'lib/ProjectBuilder/Display.pm' => '$(INST_MAN3DIR)/ProjectBuilder::Display.$(MAN3EXT)',
@@ -34,20 +40,25 @@ sub postamble {
 	my $text ="";
 
 	# Grab out any CONFDIR or MANDIR param
-	my $confdir = undef;
+	my $etcdir = undef;
 	my $mandir = undef;
+	my $prefix = undef;
 
 	while (my $arg = shift @ARGV) {
 		my ($key, $value) = split /=/, $arg;
 		if ($key =~ /^CONFDIR$/) {
-			$confdir = $value;
+			$etcdir = $value;
 		} elsif ($key =~ /^MANDIR$/) {
 			$mandir = $value;
+		} elsif ($key =~ /^PREFIX$/) {
+			$prefix = $value;
 		}
 	}
 
-	my $etcdir = $confdir || "/usr/local/etc/pb";
-	my $mandir = $mandir || "/usr/local/share/man";
+	$etcdir ||= "$prefix/etc/pb" if (defined $prefix);
+	$mandir ||= "$prefix/share/man" if (defined $prefix);
+	$etcdir ||= "/usr/local/etc/pb";
+	$mandir ||= "/usr/local/share/man";
 
 	# Use that conf dir info to modify Distribution.pm
 	system("perl -pi -e \"s~CCCC~$etcdir~\" lib/ProjectBuilder/Distribution.pm");

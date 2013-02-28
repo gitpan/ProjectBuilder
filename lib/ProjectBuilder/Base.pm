@@ -3,7 +3,8 @@
 # Base subroutines brought by the the Project-Builder project
 # which can be easily used by whatever perl project
 #
-# Copyright B. Cornec 2007-2008
+# Copyright B. Cornec 2007-2012
+# Eric Anderson's changes are (c) Copyright 2012 Hewlett Packard
 # Provided under the GPL v2
 #
 # $Id$
@@ -13,11 +14,11 @@ package ProjectBuilder::Base;
 
 use strict;
 use lib qw (lib);
+use Carp qw/confess cluck/;
+use Cwd;
 use File::Path;
-use File::Temp qw(tempdir);
 use Data::Dumper;
 use Time::localtime qw(localtime);
-use Pod::Usage;
 use English;
 use POSIX qw(locale_h);
 use ProjectBuilder::Version;
@@ -38,7 +39,7 @@ our $pbdisplaytype = "text";
 our $pblocale = "C";
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(pb_mkdir_p pb_system pb_rm_rf pb_get_date pb_log pb_log_init pb_get_uri pb_get_content pb_set_content pb_display_file pb_syntax_init pb_syntax pb_temp_init pb_get_arch pb_check_requirements pb_check_req $pbdebug $pbLOG $pbdisplaytype $pblocale);
+our @EXPORT = qw(pb_mkdir_p pb_system pb_rm_rf pb_get_date pb_log pb_log_init pb_get_uri pb_get_content pb_set_content pb_display_file pb_syntax_init pb_syntax pb_temp_init pb_get_arch pb_get_osrelease pb_check_requirements pb_check_req pb_path_expand pb_exit $pbdebug $pbLOG $pbdisplaytype $pblocale);
 ($VERSION,$REVISION) = pb_version_init();
 
 =pod
@@ -49,7 +50,7 @@ ProjectBuilder::Base, part of the project-builder.org - module dealing with gene
 
 =head1 DESCRIPTION
 
-This modules provides generic functions suitable for perl project development 
+This module provides generic functions suitable for perl project development 
 
 =head1 SYNOPSIS
 
@@ -106,8 +107,9 @@ Based on File::Path mkpath.
 
 sub pb_mkdir_p {
 my @dir = @_;
-my $ret = mkpath(@dir, 0, 0755);
-return(0);
+my $ret = eval { mkpath(@dir, 0, 0755) };
+confess "pb_mkdir_p @dir failed in ".getcwd().": $@" if ($@);
+return($ret);
 }
 
 =item B<pb_rm_rf>
@@ -126,14 +128,14 @@ return($ret);
 
 =item B<pb_system>
 
-Encapsulate the "system" call for better output and return value test
-Needs a $ENV{'PBTMP'} variable which is created by calling the pb_mktemp_init function
-Needs pb_log support, so pb_log_init should have benn called before.
+Encapsulate the "system" call for better output and return value test.
+Needs a $ENV{'PBTMP'} variable which is created by calling the pb_mktemp_init function.
+Needs pb_log support, so pb_log_init should have been called before.
 
-The first parameter is the shell command to call. this commend should NOT use redirections.
+The first parameter is the shell command to call. This command should NOT use redirections.
 The second parameter is the message to print on screen. If none is given, then the command is printed.
-The third parameter print the result of the command after correct execution if value is verbose. If value is noredir, it avoids redirecting outputs (e.g. for vi).
-This function returns the result the return value of the system command.
+The third parameter prints the result of the command after correct execution if value is "verbose". If value is "noredir", it avoids redirecting outputs (e.g. for vi). If value is "quiet", doesn't print anything at all. If value is "mayfail", failure of the command is ok even if $Global::pb_stop_on_error is set, because the caller will be handling the error. A "verbose" can be added to mayfail to have it explain why it failed
+This function returns as a result the return value of the system command.
 
 If no error reported, it prints OK on the screen, just after the message. Else it prints the errors generated.
 
@@ -150,27 +152,39 @@ pb_log(0,"$cmt... ") if ((! defined $verbose) || ($verbose ne "quiet"));
 pb_log(1,"Executing $cmd\n");
 unlink("$ENV{'PBTMP'}/system.$$.log") if (-f "$ENV{'PBTMP'}/system.$$.log");
 $redir = "2>> $ENV{'PBTMP'}/system.$$.log 1>> $ENV{'PBTMP'}/system.$$.log" if ((! defined $verbose) || ($verbose ne "noredir"));
+
+# If sudo used, then be more verbose
+pb_log(0,"Executing $cmd\n") if (($pbdebug < 1) && ($cmd =~ /^\s*\S*sudo/o) && (defined $Global::pb_show_sudo) && ($Global::pb_show_sudo =~ /true/oi));
+
 system("$cmd $redir");
 my $res = $?;
 # Exit now if the command may fail
-if ((defined $verbose) and ($verbose eq "mayfail")) {
-	pb_log(0,"N/A\n") if ($res != 0);
+if ((defined $verbose) and ($verbose =~ /mayfail/)) {
+	pb_log(0,"NOT OK but non blocking\n") if ($res != 0);
 	pb_log(0,"OK\n") if ($res == 0);
+	pb_display_file("$ENV{'PBTMP'}/system.$$.log") if ((-f "$ENV{'PBTMP'}/system.$$.log") and (defined $verbose) and ($verbose =~ /verbose/));
 	return($res) 
-	}
-if ($res == -1) {
-	pb_log(0,"failed to execute ($cmd): $!\n") if ((! defined $verbose) || ($verbose ne "quiet"));
-	pb_display_file("$ENV{'PBTMP'}/system.$$.log") if ((-f "$ENV{'PBTMP'}/system.$$.log") and ((! defined $verbose) || ($verbose ne "quiet")));
-} elsif ($res & 127) {
-	pb_log(0, "child ($cmd) died with signal ".($? & 127).", ".($? & 128) ? 'with' : 'without'." coredump\n") if ((! defined $verbose) || ($verbose ne "quiet"));
-	pb_display_file("$ENV{'PBTMP'}/system.$$.log") if ((-f "$ENV{'PBTMP'}/system.$$.log") and ((! defined $verbose) || ($verbose ne "quiet")));
-} elsif ($res == 0) {
-	pb_log(0,"OK\n") if ((! defined $verbose) || ($verbose ne "quiet"));
-	pb_display_file("$ENV{'PBTMP'}/system.$$.log") if ((defined $verbose) and (-f "$ENV{'PBTMP'}/system.$$.log") and ($verbose ne "quiet"));
-} else {
-	pb_log(0, "child ($cmd) exited with value ".($? >> 8)."\n") if ((! defined $verbose) || ($verbose ne "quiet"));
-	pb_display_file("$ENV{'PBTMP'}/system.$$.log") if ((-f "$ENV{'PBTMP'}/system.$$.log") and ((! defined $verbose) || ($verbose ne "quiet")));
 }
+
+my $cwd = getcwd;
+my $error = undef;
+$error = "ERROR: failed to execute ($cmd) in $cwd: $!\n" if ($res == -1);
+$error = "ERROR: child ($cmd) died with signal ".($res & 127).", ".($res & 128) ? 'with' : 'without'." coredump\n" if ($res & 127);
+$error = "ERROR: child ($cmd) cwd=$cwd exited with value ".($res >> 8)."\n" if ($res != 0);
+
+if (defined $error) {
+	pb_log(0, $error) if (((! defined $verbose) || ($verbose ne "quiet")) || ($Global::pb_stop_on_error));
+	pb_display_file("$ENV{'PBTMP'}/system.$$.log") if ((-f "$ENV{'PBTMP'}/system.$$.log") and ((! defined $verbose) || ($verbose ne "quiet") || $Global::pb_stop_on_error));
+	if ($Global::pb_stop_on_error) {
+		confess("ERROR running command ($cmd) with cwd=$cwd, pid=$$");
+	} else {
+		pb_log(0,"ERROR running command ($cmd) with cwd=$cwd, pid=$$\n");
+	}
+} else {
+	pb_log(0,"OK\n") if ((! defined $verbose) || ($verbose ne "quiet"));
+	pb_display_file("$ENV{'PBTMP'}/system.$$.log") if ((-f "$ENV{'PBTMP'}/system.$$.log") and (defined $verbose) and ($verbose ne "quiet"));
+}
+
 return($res);
 }
 
@@ -188,7 +202,7 @@ sub pb_get_uri {
 
 my $uri = shift || undef;
 
-pb_log(2,"DEBUG: uri:$uri\n");
+pb_log(2,"DEBUG: uri:" . (defined $uri ? $uri : '') . "\n");
 my ($scheme, $authority, $path, $query, $fragment) =
          $uri =~ m|(?:([^:/?#]+):)?(?://([^/?#]*))?([^?#]*)(?:\?([^#]*))?(?:#(.*))?| if (defined $uri);
 my ($account,$host,$port) = $authority =~ m|(?:([^\@]+)\@)?([^:]+)(:(?:[0-9]+))?| if (defined $authority);
@@ -263,8 +277,10 @@ Here is a usage example:
 
 sub pb_log {
 
-my $dlevel = shift;
-my $msg = shift;
+my $dlevel = shift || 0;
+my $msg = shift || "";
+
+$pbLOG = \*STDOUT if (not defined $pbLOG);
 
 print $pbLOG "$msg" if ($dlevel <= $pbdebug);
 print "$msg" if (($dlevel == 0) && ($pbLOG != \*STDOUT));
@@ -331,6 +347,19 @@ close(R);
 $/ = $bkp;
 }
 
+=item B<pb_exit>
+
+Fundtion to call before exiting pb so cleanup is done
+
+=cut
+
+sub pb_exit {
+
+my $ret = shift || 0;
+pb_log(0,"Please remove manually $ENV{'PBTMP'} after debug analysis\n") if ($pbdebug > 1);
+exit($ret);
+}
+
 =item B<pb_syntax_init>
 
 This function initializes the global variable used by the pb_syntax function.
@@ -356,17 +385,31 @@ Cf: man Pod::Usage
 
 sub pb_syntax {
 
-my $exit_status = shift || -1;
-my $verbose_level = shift || 0;
+my $exit_status = shift;
+my $verbose_level = shift;
 
 my $filehandle = \*STDERR;
 
+# Don't do it upper as before as when the value is 0 
+# it is considered false and then exit was set to -1
+$exit_status = -1 if (not defined $exit_status);
+$verbose_level = 0 if (not defined $verbose_level);
+
 $filehandle = \*STDOUT if ($exit_status == 0);
 
-pod2usage( { -message => $pbsynmsg,
-             -exitval => $exit_status  ,
-             -verbose => $verbose_level,
-             -output  => $filehandle } );
+eval {
+	require Pod::Usage;
+	Pod::Usage->import();
+};
+if ($@) {
+	# No Pod::Usage found not printing usage. Old perl only
+	pb_exit();
+} else {
+	pod2usage(	-message => $pbsynmsg,
+			-exitval => $exit_status,
+			-verbose => $verbose_level,
+			-output  => $filehandle );
+}
 }
 
 =item B<pb_temp_init>
@@ -380,13 +423,55 @@ sub pb_temp_init {
 if (not defined $ENV{'TMPDIR'}) {
 	$ENV{'TMPDIR'}="/tmp";
 }
-$ENV{'PBTMP'} = tempdir( "pb.XXXXXXXXXX", DIR => $ENV{'TMPDIR'}, CLEANUP => 1 );
+
+# Makes this function compatible with perl 5.005x
+eval {
+	require File::Temp;
+	File::Temp->import("tempdir");
+};
+if ($@) {
+	# File::Temp not found, harcoding stuff
+	# Inspired by http://cpansearch.perl.org/src/TGUMMELS/File-MkTemp-1.0.6/File/MkTemp.pm 
+	# Copyright 1999|2000 Travis Gummels.  All rights reserved.  
+	# This may be used and modified however you want.
+	my $template = "pb.XXXXXXXXXX";
+	my @template = split //, $template;
+	my @letters = split(//,"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+	for (my $i = $#template; $i >= 0 && ($template[$i] eq 'X'); $i--){
+		$template[$i] = $letters[int(rand 52)];
+	}
+	undef $template;
+	$template = pack "a" x @template, @template;
+	pb_mkdir_p("$ENV{'TMPDIR'}/$template");
+} else {
+	if ($pbdebug > 1) {
+		$ENV{'PBTMP'} = tempdir( "pb.XXXXXXXXXX", DIR => $ENV{'TMPDIR'});
+		pb_log(2,"DEBUG: Creating a non-volatile temporary directory ($ENV{'PBTMP'})\n");
+	} else {
+		$ENV{'PBTMP'} = tempdir( "pb.XXXXXXXXXX", DIR => $ENV{'TMPDIR'}, CLEANUP => 1 );
+	}
 }
+}
+
+=item B<pb_get_osrelease>
+
+This function returns the release of our operating system
+
+=cut
+
+sub pb_get_osrelease {
+
+# On linux can also use /proc/sys/kernel/osrelease
+my $rel = `uname -r`;
+chomp($rel);
+return($rel);
+}
+
 
 =item B<pb_get_arch>
 
 This function returns the architecture of our local environment and
-standardize on i386 for those platforms. It also solves issues where a i386 VE on x86_64 returns x86_64 wrongly
+standardize on i386 for those platforms. 
 
 =cut
 
@@ -394,7 +479,7 @@ sub pb_get_arch {
 
 my $arch = `uname -m`;
 chomp($arch);
-$arch =~ s/i.86/i386/;
+$arch =~ s/i[3456]86/i386/;
 # For Solaris
 $arch =~ s/i86pc/i386/;
 
@@ -404,8 +489,8 @@ return($arch);
 =item B<pb_check_requirements>
 
 This function checks that the commands needed for the subsystem are indeed present. 
-The required commands are passed as a coma separated string as first parameter.
-The optional commands are passed as a coma separated string as second parameter.
+The required commands are passed as a comma separated string as first parameter.
+The optional commands are passed as a comma separated string as second parameter.
 
 =cut
 
@@ -419,14 +504,14 @@ my ($req2,$opt2) = (undef,undef);
 $req2 = $req->{$appname} if (defined $req and defined $appname);
 $opt2 = $opt->{$appname} if (defined $opt and defined $appname);
 
-# cmds is a string of coma separated commands
+# cmds is a string of comma separated commands
 if (defined $req2) {
 	foreach my $file (split(/,/,$req2)) {
 		pb_check_req($file,0);
 	}
 }
 
-# opts is a string of coma separated commands
+# opts is a string of comma separated commands
 if (defined $opt2) {
 	foreach my $file (split(/,/,$opt2)) {
 		pb_check_req($file,1);
@@ -436,7 +521,7 @@ if (defined $opt2) {
 
 =item B<pb_check_req>
 
-This function checks existence of a command and return its full pathname.
+This function checks existence of a command and return its full pathname or undef if not found.
 The command name is passed as first parameter.
 The second parameter should be 0 if the command is mandatory, 1 if optional.
 
@@ -445,8 +530,10 @@ The second parameter should be 0 if the command is mandatory, 1 if optional.
 sub pb_check_req {
 
 my $file = shift;
-my $opt = shift || 1;
+my $opt = shift;
 my $found = undef;
+
+$opt = 1 if (not defined $opt);
 
 pb_log(2,"Checking availability of $file...");
 # Check for all dirs in the PATH
@@ -466,8 +553,24 @@ if (not $found) {
 	}
 } else {
 	pb_log(2,"OK\n");
-	return($found);
 }
+return($found);
+}
+
+=item B<pb_path_expand>
+
+Expand out a path by environment variables as ($ENV{XXX}) and ~
+
+=cut
+
+sub pb_path_expand {
+
+my $path = shift;
+
+eval { $path =~ s/(\$ENV.+\})/$1/eeg; };
+$path =~ s/^\~/$ENV{HOME}/;
+
+return($path);
 }
 
 =back 

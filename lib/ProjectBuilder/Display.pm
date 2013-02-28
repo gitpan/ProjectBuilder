@@ -3,7 +3,7 @@
 # Display subroutines brought by the the Project-Builder project
 # which can be easily used by whatever perl project
 #
-# Copyright B. Cornec 2007-2008
+# Copyright B. Cornec 2007-2012
 # Provided under the GPL v2
 #
 # $Id$

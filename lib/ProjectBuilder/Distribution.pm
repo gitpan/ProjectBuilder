@@ -2,6 +2,10 @@
 #
 # Creates common environment for distributions
 #
+# Copyright B. Cornec 2007-2012
+# Eric Anderson's changes are (c) Copyright 2012 Hewlett Packard
+# Provided under the GPL v2
+#
 # $Id$
 #
 
@@ -9,11 +13,14 @@ package ProjectBuilder::Distribution;
 
 use strict;
 use Data::Dumper;
+use Carp 'confess';
 use ProjectBuilder::Version;
 use ProjectBuilder::Base;
 use ProjectBuilder::Conf;
 use File::Basename;
 use File::Copy;
+# requires perl 5.004 minimum in VM/VE
+use File::Compare;
 
 # Global vars
 # Inherit from the "Exporter" module which handles exporting functions.
@@ -25,7 +32,7 @@ use Exporter;
 # any code which uses this module.
  
 our @ISA = qw(Exporter);
-our @EXPORT = qw(pb_distro_conffile pb_distro_get pb_distro_getlsb pb_distro_installdeps pb_distro_getdeps pb_distro_only_deps_needed pb_distro_setuprepo pb_distro_setuposrepo pb_distro_get_param pb_distro_get_context);
+our @EXPORT = qw(pb_distro_conffile pb_distro_get pb_distro_getlsb pb_distro_installdeps pb_distro_getdeps pb_distro_only_deps_needed pb_distro_setuprepo pb_distro_setuposrepo pb_distro_get_param pb_distro_get_context pb_distro_to_keylist pb_apply_conf_proxy);
 ($VERSION,$REVISION) = pb_version_init();
 
 =pod
@@ -104,6 +111,7 @@ my $pbos = {
 	'os' => "unknown",
 	'nover' => "false",
 	'rmdot' => "false",
+	'useminor' => "false",
 	};
 $pbos->{'name'} = shift;
 $pbos->{'version'} = shift;
@@ -123,9 +131,14 @@ $pbos->{'version'} = "unknown" if (not defined $pbos->{'version'});
 
 # Initialize arch
 $pbos->{'arch'} = pb_get_arch() if (not defined $pbos->{'arch'});
+# Solves a bug on Red Hat 6.x where real arch is not detected when using setarch and a chroot
+# As it was only i386 forcing it here.
+$pbos->{'arch'} = "i386" if (($pbos->{'name'} eq "redhat") && ($pbos->{'version'} =~ /^6\./));
 
 # Dig into the tuple to find the best answer
 # Do NOT factorize here, as it won't work as of now for hash creation
+# Do NOT change order without caution
+$pbos->{'useminor'} = pb_distro_get_param($pbos,pb_conf_get("osuseminorrel"));
 $pbos->{'family'} = pb_distro_get_param($pbos,pb_conf_get("osfamily"));
 $pbos->{'type'} = pb_distro_get_param($pbos,pb_conf_get("ostype"));
 ($pbos->{'os'},$pbos->{'install'},$pbos->{'suffix'},$pbos->{'nover'},$pbos->{'rmdot'},$pbos->{'update'}) = pb_distro_get_param($pbos,pb_conf_get("os","osins","ossuffix","osnover","osremovedotinver","osupd"));
@@ -252,7 +265,7 @@ my $lsbf = $ambiguous_rel_files->{"lsb"};
 # LSB has not been configured.
 if (not defined $lsbf) {
 	print STDERR "no lsb entry defined for osrelambfile\n";
-	die "You modified upstream delivery and lost !\n";
+	confess "You modified upstream delivery and lost !\n";
 }
 
 if (-r $lsbf) {
@@ -282,8 +295,21 @@ if (-r $lsbf) {
 	return($l, $i, $d, $r, $c);
 } else {
 	print STDERR "Unable to read $lsbf file\n";
-	die "Please report to the maintainer bruno_at_project-builder.org\n";
+	confess "Please report to the maintainer bruno_at_project-builder.org\n";
 }
+}
+
+# Internal function
+
+sub pb_apply_conf_proxy ($) {
+my ($pbos) = @_;
+
+my $ftp_proxy = pb_distro_get_param($pbos,pb_conf_get_if("ftp_proxy"));
+my $http_proxy = pb_distro_get_param($pbos,pb_conf_get_if("http_proxy"));
+
+# We do not overwrite shell settings
+$ENV{ftp_proxy} ||= $ftp_proxy if ((defined $ftp_proxy) && ($ftp_proxy ne ""));
+$ENV{http_proxy} ||= $http_proxy if ((defined $http_proxy) && ($http_proxy ne ""));
 }
 
 =item B<pb_distro_installdeps>
@@ -301,16 +327,26 @@ my $pbos = shift;
 my $deps = shift || undef;
 
 # Protection
-return if (not defined $pbos->{'install'});
+confess "Missing install command for $pbos->{name}-$pbos->{version}-$pbos->{arch}" unless (defined $pbos->{install} && $pbos->{install} =~ /\w/);
+pb_apply_conf_proxy($pbos);
 
 # Get dependencies in the build file if not forced
-$deps = pb_distro_getdeps($f, $pbos) if (not defined $deps);
+$deps = pb_distro_getdeps($f,$pbos) if (not defined $deps);
+pb_log(1, "ftp_proxy=$ENV{ftp_proxy}\n") if (defined $ENV{ftp_proxy});
+pb_log(1, "http_proxy=$ENV{http_proxy}\n")  if (defined $ENV{http_proxy});
 pb_log(2,"deps: $deps\n");
 return if ((not defined $deps) || ($deps =~ /^\s*$/));
-if ($deps !~ /^[ 	]*$/) {
-	# This may not be // proof. We should test for availability of repo and sleep if not
-	pb_system("$pbos->{'install'} $deps","Installing dependencies ($deps)");
-	}
+
+# This may not be // proof. We should test for availability of repo and sleep if not
+my $cmd = "$pbos->{'install'} $deps";
+my $ret = pb_system($cmd, "Installing dependencies ($cmd)","mayfail");
+# Try to accomodate deficient proxies
+if ($ret != 0) {
+	pb_system($cmd, "Re-trying installing dependencies ($cmd)");
+}
+# Check that all deps have been installed correctly
+$deps = pb_distro_getdeps($f, $pbos);
+confess "Some dependencies did not install ($deps)" if ((defined $deps) && ($deps =~ /\S/));
 }
 
 =item B<pb_distro_getdeps>
@@ -350,11 +386,21 @@ pb_log(2,"regexp: $regexp\n");
 # Preserve separator before using the one we need
 my $oldsep = $/;
 $/ = $sep;
-open(DESC,"$f") || die "Unable to open $f";
+open(DESC,"$f") || confess "Unable to open $f";
 while (<DESC>) {
 	pb_log(4,"read: $_\n");
 	next if (! /$regexp/);
 	chomp();
+
+	my $nextline;
+	# Support multi-lines deps for .deb
+	if ($pbos->{type} eq 'deb') {
+		while ($nextline = <DESC>) {
+			last unless $nextline =~ /^\s+(.+)$/o;
+			$_ .= $1;
+		}
+	}
+
 	# What we found with the regexp is the list of deps.
 	pb_log(2,"found deps: $_\n");
 	s/$regexp/$1/i;
@@ -370,6 +416,12 @@ while (<DESC>) {
 	s/\s*$//;
 	s/\s+/ /g;
 	$deps .= " ".$_;
+
+	# Support multi-lines deps for .deb (fwup)
+	if (defined $nextline) {
+		$_ = $nextline;
+		redo;
+	}
 }
 close(DESC);
 $/ = $oldsep;
@@ -393,13 +445,27 @@ my $deps = shift || undef;
 return("") if ((not defined $deps) || ($deps =~ /^\s*$/));
 my $deps2 = "";
 # Avoid to install what is already there
-foreach my $p (split(/ /,$deps)) {
+delete $ENV{COLUMNS};
+foreach my $p (split(/\s+/,$deps)) {
+	next if $p =~ /^\s*$/o;
 	if ($pbos->{'type'} eq  "rpm") {
-		my $res = pb_system("rpm -q --whatprovides --quiet $p","","quiet");
+		my $rpmcmd = "rpm -q --whatprovides --quiet";
+		# whatprovides doesn't work for RH6.2
+		$rpmcmd = "rpm -q --quiet" if (($pbos->{'name'} eq "redhat") && ($pbos->{'version'} =~ /6/));
+		my $res = pb_system("$rpmcmd $p","Looking for $p","mayfail");
 		next if ($res eq 0);
+		pb_log(1, "INFO: missing dependency $p\n");
 	} elsif ($pbos->{'type'} eq "deb") {
-		my $res = pb_system("dpkg -L $p","","quiet");
+		my $res = pb_system("dpkg -L $p","Looking for $p","mayfail");
 		next if ($res eq 0);
+		open(CMD,"dpkg -l $p |") or confess "Unable to run dpkg -l $p: $!";
+		my $ok = 0;
+		while (<CMD>) {
+			$ok = 1 if /^ii\s+$p/;
+		}
+		close(CMD);
+		next if $ok;
+		pb_log(1, "INFO: missing dependency $p\n");
 	} elsif ($pbos->{'type'} eq "ebuild") {
 	} else {
 		# Not reached
@@ -439,6 +505,29 @@ my $pbos = shift;
 pb_distro_setuprepo_gen($pbos,"$ENV{'PBDESTDIR'}/pbrc","addrepo");
 }
 
+# Internal
+sub pb_distro_compare_repo {
+
+my $src = shift;
+my $dest = shift;
+
+if (not -f $dest) {
+	pb_log(1, "INFO: Creating new file $dest\n");
+} elsif (-f $dest && -s $dest == 0) {
+	pb_log(1, "INFO: Overwriting empty file $dest\n");
+} elsif (-f $dest && compare("$src", $dest) == 0) {
+	pb_log(1, "INFO: Overwriting identical file $dest\n");
+} else {
+	pb_log(0, "ERROR: destination file $dest exists and is different than source $src\n");
+	pb_system("cat $dest","INFO: Dest...\n");
+	pb_system("cat $src","INFO: New...\n");
+	pb_log("INFO: Returning...\n");
+	return(0);
+}
+# TRUE
+return(1);
+}
+
 =item B<pb_distro_setuprepo_gen>
 
 This function sets up in a generic way potential additional repository 
@@ -459,6 +548,8 @@ return if (not defined $addrepo);
 my $param = pb_distro_get_param($pbos,$addrepo);
 return if ($param eq "");
 
+pb_apply_conf_proxy($pbos);
+
 # Loop on the list of additional repo
 foreach my $i (split(/,/,$param)) {
 
@@ -467,7 +558,7 @@ foreach my $i (split(/,/,$param)) {
 
 	# The repo file can be local or remote. download or copy at the right place
 	if (($scheme eq "ftp") || ($scheme eq "http")) {
-		pb_system("wget -O $ENV{'PBTMP'}/$bn $i","Donwloading additional repository file $i");
+		pb_system("wget -O $ENV{'PBTMP'}/$bn $i","Downloading additional repository file $i");
 	} else {
 		copy($i,$ENV{'PBTMP'}/$bn);
 	}
@@ -477,31 +568,79 @@ foreach my $i (split(/,/,$param)) {
 		if ($bn =~ /\.rpm$/) {
 			my $pn = $bn;
 			$pn =~ s/\.rpm//;
-			if (pb_system("rpm -q --quiet $pn","","quiet") != 0) {
+			if (pb_system("rpm -q --quiet $pn","","mayfail") != 0) {
 				pb_system("sudo rpm -Uvh $ENV{'PBTMP'}/$bn","Adding package to setup repository");
 			}
 		} elsif ($bn =~ /\.repo$/) {
-			# Yum repo
-			pb_system("sudo mv $ENV{'PBTMP'}/$bn /etc/yum.repos.d","Adding yum repository") if (not -f "/etc/yum.repos.d/$bn");
+			my $dirdest = "";
+			my $reponame = "";
+			# TODO: could go in pb.conf in fact
+			if ($pbos->{install} =~ /\byum\b/) {
+				$reponame="yum";
+				$dirdest = "/etc/yum.repos.d";
+			} elsif ($pbos->{install} =~ /\bzypper\b/) {
+				$reponame="zypper";
+				$dirdest = "/etc/zypp/repos.d";
+			} else {
+				confess "Unknown location for repository file for '$pbos->{install}' command";
+			}
+			my $dest = "$dirdest/$bn";
+			return if (pb_distro_compare_repo($ENV{'PBTMP'}/$bn,$dest));
+			confess "Missing directory $dirdest ($reponame)" unless (-d $dirdest);
+			pb_system("sudo mv $ENV{'PBTMP'}/$bn $dirdest/$bn","Adding $reponame repository") if (not -f "$dirdest/$bn");
 		} elsif ($bn =~ /\.addmedia/) {
 			# URPMI repo
 			# We should test that it's not already a urpmi repo
 			pb_system("chmod 755 $ENV{'PBTMP'}/$bn ; sudo $ENV{'PBTMP'}/$bn 2>&1 > /dev/null","Adding urpmi repository");
 		} else {
-			pb_log(0,"Unable to deal with repository file $i on rpm distro ! Please report to dev team\n");
+			pb_log(0,"ERROR: Unable to deal with repository file $i on rpm distro ! Please report to dev team\n");
 		}
 	} elsif ($pbos->{'type'} eq "deb") {
-		if (($bn =~ /\.sources.list$/) && (not -f "/etc/apt/sources.list.d/$bn")) {
+		if ($bn =~ /\.sources.list$/) {
+			my $dest = "/etc/apt/sources.list.d/$bn";
+			return if (pb_distro_compare_repo($ENV{'PBTMP'}/$bn,$dest));
 			pb_system("sudo mv $ENV{'PBTMP'}/$bn /etc/apt/sources.list.d","Adding apt repository");
 			pb_system("sudo apt-get update","Updating apt repository");
 		} else {
-			pb_log(0,"Unable to deal with repository file $i on deb distro ! Please report to dev team\n");
+			pb_log(0,"ERROR: Unable to deal with repository file $i on deb distro ! Please report to dev team\n");
 		}
 	} else {
-		pb_log(0,"Unable to deal with repository file $i on that distro ! Please report to dev team\n");
+		pb_log(0,"ERROR: Unable to deal with repository file $i on that distro ! Please report to dev team\n");
 	}
 }
 return;
+}
+
+=item B<pb_distro_to_keylist>
+
+Given a pbos object (first param) and the generic key (second param), get the list of possible keys for looking up variable for
+filter names.  The list will be sorted most-specific to least specific.
+
+=cut
+
+sub pb_distro_to_keylist ($$) {
+
+my ($pbos, $generic) = @_;
+
+foreach my $key (qw/name version arch family type os/) {
+    confess "missing pbos key $key" unless (defined $pbos->{$key});
+}
+
+my @keylist = ("$pbos->{'name'}-$pbos->{'version'}-$pbos->{'arch'}", "$pbos->{'name'}-$pbos->{'version'}");
+
+# Loop to include also previous minor versions
+# if configured so
+if ((defined $pbos->{'useminor'}) && ($pbos->{'useminor'} eq "true") && ($pbos->{'version'} =~ /^(\d+)\.(\d+)$/o)) {
+        my ($major, $minor) = ($1, $2);
+        while ($minor > 0) {
+                $minor--;
+                push (@keylist, "$pbos->{'name'}-${major}.$minor");
+        }
+        push (@keylist, "$pbos->{'name'}-$major");
+}
+
+push (@keylist, $pbos->{'name'}, $pbos->{'family'}, $pbos->{'type'}, $pbos->{'os'}, $generic);
+return @keylist;
 }
 
 =item B<pb_distro_get_param>
@@ -512,30 +651,19 @@ This function gets the parameter in the conf file from the most precise tuple up
 
 sub pb_distro_get_param {
 
-my @param;
-my $param;
+my @param = ();
 my $pbos = shift;
 
+my @keylist = pb_distro_to_keylist($pbos,"default");
 pb_log(2,"DEBUG: pb_distro_get_param on $pbos->{'name'}-$pbos->{'version'}-$pbos->{'arch'} for ".Dumper(@_)."\n");
 foreach my $opt (@_) {
-	if (defined $opt->{"$pbos->{'name'}-$pbos->{'version'}-$pbos->{'arch'}"}) {
-		$param = $opt->{"$pbos->{'name'}-$pbos->{'version'}-$pbos->{'arch'}"};
-	} elsif (defined $opt->{"$pbos->{'name'}-$pbos->{'version'}"}) {
-		$param = $opt->{"$pbos->{'name'}-$pbos->{'version'}"};
-	} elsif (defined $opt->{"$pbos->{'name'}"}) {
-		$param = $opt->{"$pbos->{'name'}"};
-	} elsif (defined $opt->{$pbos->{'family'}}) {
-		$param = $opt->{$pbos->{'family'}};
-	} elsif (defined $opt->{$pbos->{'type'}}) {
-		$param = $opt->{$pbos->{'type'}};
-	} elsif (defined $opt->{$pbos->{'os'}}) {
-		$param = $opt->{$pbos->{'os'}};
-	} elsif (defined $opt->{"default"}) {
-		$param = $opt->{"default"};
-	} else {
-		$param = "";
+	my $param = "";
+	foreach my $key (@keylist) {
+		if (defined $opt->{$key}) {
+			$param = $opt->{$key};
+			last;
+		}
 	}
-
 	# Allow replacement of variables inside the parameter such as name, version, arch for rpmbootstrap 
 	# but not shell variable which are backslashed
 	if ($param =~ /[^\\]\$/) {
@@ -547,10 +675,10 @@ foreach my $opt (@_) {
 
 pb_log(2,"DEBUG: pb_distro_get_param on $pbos->{'name'}-$pbos->{'version'}-$pbos->{'arch'} returns ==".Dumper(@param)."==\n");
 
-# Return one param in scalar context, an array if not.
+# Return one param if user only asked for one lookup, an array if not.
 my $nb = @param;
 if ($nb eq 1) {
-	return($param);
+	return($param[0]);
 } else {
 	return(@param);
 }
@@ -559,6 +687,7 @@ if ($nb eq 1) {
 =item B<pb_distro_get_context>
 
 This function gets the OS context passed as parameter and return the corresponding distribution hash
+If passed undef or "" then auto-detects
 
 =cut
 
@@ -568,7 +697,7 @@ sub pb_distro_get_context {
 my $os = shift;
 my $pbos;
 
-if (defined $os) {
+if ((defined $os) && ($os ne "")) {
 	my ($name,$ver,$darch) = split(/-/,$os);
 	pb_log(0,"Bad format for $os") if ((not defined $name) || (not defined $ver) || (not defined $darch)) ;
 	chomp($darch);

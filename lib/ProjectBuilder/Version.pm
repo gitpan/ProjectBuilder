@@ -4,6 +4,9 @@
 # Those are filtered with pb mecanism
 # and have been isolated here to avoid unrelated effects
 #
+# Copyright B. Cornec 2007-2012
+# Provided under the GPL v2
+#
 package ProjectBuilder::Version;
 
 use strict;
@@ -18,8 +21,8 @@ use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(pb_version_init);
 
-$VERSION = "0.11.3";
-$REVISION = "1307";
+$VERSION = "0.12.2";
+$REVISION = "1699";
 
 sub pb_version_init {
 

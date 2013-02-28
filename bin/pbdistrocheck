@@ -4,13 +4,15 @@
 #
 # $Id$
 #
-# Copyright B. Cornec 2007
+# Copyright B. Cornec 2007-2012
+# Eric Anderson's changes are (c) Copyright 2012 Hewlett Packard
 # Provided under the GPL v2
 
 use strict 'vars';
 use Getopt::Long qw(:config auto_abbrev no_ignore_case);
 use Data::Dumper;
 use lib qw (lib);
+#use lib '/usr/share/perl5'; # mandatory for opensuse
 use ProjectBuilder::Distribution;
 use ProjectBuilder::Base;
 
@@ -27,11 +29,15 @@ pbdistrocheck is a command from the pb project providing the same type of servic
 
 =head1 SYNOPSIS
 
-pbdistrocheck [-d][-v][-l [-c][-i][-r][-a]][-s] [distro-ver-arch]
+pbdistrocheck [-h][-d][-v][-l [-c][-i][-r][-a]][-s] [distro-ver-arch]
 
 =head1 OPTIONS
 
 =over 4
+
+=item B<-h|--help>
+
+Prints this help
 
 =item B<-v|--verbose>
 
@@ -39,41 +45,41 @@ Print a brief help message and exits.
 
 =item B<-a|--all>
 
-print all parameters
+Print all parameters
 
 =item B<-s|--short>
 
-generate a short format user friendly, comma separated allowing parsing
+Generate a short format user friendly, comma separated allowing parsing
 
 =item B<-l|--lsb>
 
-generate an LSB compliant output
+Generate an LSB compliant output
 
 =item B<-d|--description>
 
-print only description (LSB only)
+Print only description (LSB only)
 
 =item B<-r|--release>
 
-print only release (LSB only)
+Print only release (LSB only)
 
 =item B<-c|--codename>
 
-print only codename (LSB only)
+Print only codename (LSB only)
 
 =item B<-i|--id>
 
-print only distribution identificator (LSB only)
+Print only distribution identificator (LSB only)
 
 =item B<-a|--all>
 
-print all LSB fields
+Print all LSB fields
 
 =back 
 
 =head1 ARGUMENTS
 
-arguments are optional. If none given, analyzes the underlying operating system
+Arguments are optional. If none given, analyzes the underlying operating system
 If one is given, it should have the format osname-version-architecture, and in that case pbdistrocheck will provide all the information related to that OS needed by pb.
 
 =head1 WEB SITES
@@ -104,6 +110,7 @@ my %opts;					# CLI Options
 GetOptions(
 		"verbose|v+" => \$opts{'v'},
 		"short|s" => \$opts{'s'},
+		"help|h" => \$opts{'h'},
 		"description|d" => \$opts{'d'},
 		"id|i" => \$opts{'i'},
 		"release|r" => \$opts{'r'},
